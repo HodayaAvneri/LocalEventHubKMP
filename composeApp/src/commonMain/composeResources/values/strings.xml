@@ -1,0 +1,19 @@
+<resources>
+    <string name="loading">Loading please wait !!!</string>
+    <string name="login">Login</string>
+    <string name="sign_up">Sign Up</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="name">Name</string>
+    <string name="confirm_password">Confirm Password</string>
+    <string name="name_validation">Enter valid name</string>
+    <string name="email_validation">Enter valid email</string>
+    <string name="password_validation">Enter valid password</string>
+    <string name="confirm_password_validation">Enter valid confirm password</string>
+    <string name="no_account">You don't have an account?</string>
+    <string name="have_account">You already have an account?</string>
+    <string name="events">Events</string>
+    <string name="map">NearBy</string>
+    <string name="profile">Profile</string>
+
+</resources>
