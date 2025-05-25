@@ -61,6 +61,8 @@ kotlin {
             implementation(libs.permissions.location)
             implementation(libs.compass.geolocation)
             implementation(libs.compass.geolocation.mobile)
+            implementation(libs.compass.autocomplete)
+            implementation(libs.compass.autocomplete.mobile)
             implementation(libs.navigation.compose)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.datastore)

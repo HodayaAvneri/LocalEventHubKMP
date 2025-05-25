@@ -26,7 +26,7 @@ sealed class DashboardRoutes {
     data object EventDetail: DashboardRoutes()
 
     @Serializable
-    data object AddEvent: DashboardRoutes()
+    data class AddEvent(val pageFlag: String): DashboardRoutes()
 
 
 }

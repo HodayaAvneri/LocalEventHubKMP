@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Button
@@ -21,6 +23,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -35,6 +39,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -43,8 +48,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.localeventhub.app.dashboard.presentation.navigation.EventPageFlag
 import com.localeventhub.app.expect.isApiLevel35
 import com.localeventhub.app.featurebase.common.Colors
 import com.localeventhub.app.featurebase.common.Status
@@ -52,6 +59,9 @@ import com.localeventhub.app.featurebase.common.UIStatus
 import com.localeventhub.app.featurebase.presentation.ui.compose.FullScreenLoadingProgress
 import com.localeventhub.app.featurebase.presentation.ui.compose.TextField
 import com.localeventhub.app.featurebase.presentation.ui.state.UIState
+import dev.jordond.compass.Place
+import dev.jordond.compass.autocomplete.Autocomplete
+import dev.jordond.compass.autocomplete.mobile
 import kotlinx.coroutines.launch
 import localeventhub.composeapp.generated.resources.Res
 import localeventhub.composeapp.generated.resources.add_photo
@@ -102,18 +112,29 @@ fun AddEventScreen(onNavigate: () -> Unit, viewModel: EventViewModel = koinViewM
     }
 
     Scaffold(
-        modifier = if(shouldAddInsets) Modifier.fillMaxSize().consumeWindowInsets(WindowInsets.statusBars) else Modifier.fillMaxSize(),
+        modifier = if (shouldAddInsets) Modifier.fillMaxSize()
+            .consumeWindowInsets(WindowInsets.statusBars) else Modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
                 modifier = Modifier.shadow(elevation = 5.dp),
-                title = { Text(stringResource(Res.string.events), color = if(platform.startsWith("Android")) Color.White else Color.Black) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = if(platform.startsWith("Android")) Colors.primary else Color.White),
+                title = {
+                    Text(
+                        stringResource(Res.string.events),
+                        color = if (platform.startsWith("Android")) Color.White else Color.Black
+                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = if (platform.startsWith(
+                            "Android"
+                        )
+                    ) Colors.primary else Color.White
+                ),
                 navigationIcon = {
-                    IconButton(onClick = { onNavigate()}){
+                    IconButton(onClick = { onNavigate() }) {
                         Icon(
                             painter = painterResource(Res.drawable.ic_back),
                             contentDescription = "Back",
-                            tint = if(platform.startsWith("Android")) Color.White else Color.Black
+                            tint = if (platform.startsWith("Android")) Color.White else Color.Black
                         )
                     }
                 })
@@ -150,6 +171,7 @@ fun AddEventScreen(onNavigate: () -> Unit, viewModel: EventViewModel = koinViewM
 
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEvent(
     paddingValues: PaddingValues,
@@ -192,67 +214,117 @@ fun AddEvent(
             textFieldValue = { viewModel.descriptionState.value.textValue },
             onValueChange = viewModel::setDescription
         )
-        Box(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-                .clickable { expanded = true }) {
+        ExposedDropdownMenuBox(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded }
+        ) {
+            // TextField with dropdown icon
             OutlinedTextField(
-                modifier = Modifier.fillMaxWidth(),
                 value = selectedItem,
-                onValueChange = { },
-                label = { Text("Tag", color = Color.Black) },
-                enabled = false,
-                colors = TextFieldDefaults.colors(
-                    disabledTextColor = Color.Black,
-                    disabledContainerColor = Color.White
-                ),
-                trailingIcon = {
-                    Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-                }
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Tag") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                modifier = Modifier
+                    .menuAnchor()
+                    .fillMaxWidth()
             )
 
-            DropdownMenu(
+            // Dropdown menu items
+            ExposedDropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false }
             ) {
                 items.forEach { item ->
                     DropdownMenuItem(
+                        text = { Text(item) },
                         onClick = {
                             selectedItem = item
                             expanded = false
-                        },
-                        text = { Text(item) }
+                        }
                     )
                 }
             }
         }
-        // Location
-        TextField(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp),
-            hint = "Location",
-            isError = { viewModel.locationState.value.isError },
-            errorString = { stringResource(Res.string.email_validation) },
-            textFieldValue = { viewModel.locationState.value.textValue },
-            onValueChange = viewModel::setLocation
-        )
-
-        // SignUp Button
-        Button(
-            onClick = { onAddClick() },
-            modifier = Modifier
-                .fillMaxWidth().padding(top = 15.dp)
-                .height(50.dp),
-            shape = RoundedCornerShape(25.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE91E63))
-        ) {
-            Text(
-                text = "Save",
-                color = Color.White,
-                fontSize = 16.sp
-            )
+        PlacesAutocomplete()
+        if(viewModel.pageFlag != EventPageFlag.VIEW.name){
+        // Save Button
+            Button(
+                onClick = { onAddClick() },
+                modifier = Modifier
+                    .fillMaxWidth().padding(top = 15.dp)
+                    .height(50.dp),
+                shape = RoundedCornerShape(25.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE91E63))
+            ) {
+                Text(
+                    text = when (viewModel.pageFlag) {
+                        EventPageFlag.ADD.name -> "Save"
+                        EventPageFlag.UPDATE.name -> "Update"
+                        else -> ""
+                    },
+                    color = Color.White,
+                    fontSize = 16.sp
+                )
+            }
         }
     }
+}
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PlacesAutocomplete() {
+    val scope = rememberCoroutineScope()
+    val autocomplete = remember { Autocomplete.mobile()   }
+    var autoCompleteExpanded by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+    val places = remember { mutableStateListOf<Place?>() }
+    var selectedPlace: Place? by remember { mutableStateOf(null) }
 
+    ExposedDropdownMenuBox(
+        expanded = autoCompleteExpanded,
+        onExpandedChange = {}
+    ) {
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            label = { Text("Location") },
+            modifier = Modifier
+                .menuAnchor()
+                .fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(
+                onSearch = {
+                    scope.launch {
+                        autocomplete.search(searchQuery).getOrNull().let {
+                            println(it)
+                            places.clear()
+                            places.addAll(it?.toList() ?: emptyList())
+                        }
+                    }
+                    autoCompleteExpanded = !autoCompleteExpanded
+                })
+        )
+        ExposedDropdownMenu(
+            expanded = autoCompleteExpanded,
+            onDismissRequest = {
+                autoCompleteExpanded = false
+            }
+        ) {
+            if (places.isNotEmpty()) {
+                places.forEach { selectionOption ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(text = selectionOption?.locality ?: selectionOption?.subLocality ?: selectionOption?.country ?: "Unknown Place")
+                        },
+                        onClick = {
+                            selectedPlace = selectionOption
+                            autoCompleteExpanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
 }

@@ -146,7 +146,7 @@ fun ProfileScreen(
         },
         snackbarHost = { SnackbarHost(snackBarHostState) }) { innerPadding ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(innerPadding).background(Color.White),
+            modifier = Modifier.fillMaxSize().background(Color(0xFFF5F5F5)).padding(innerPadding),
         ) {
             when (uiState.status) {
                 UIStatus.INITIAL -> {
@@ -183,7 +183,6 @@ fun Profile(
         modifier = Modifier
             .padding(paddingValues())
             .fillMaxSize()
-            .background(Color(0xFFF5F5F5))
             .padding(10.dp),
         ) {
 

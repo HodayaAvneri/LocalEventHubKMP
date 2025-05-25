@@ -12,6 +12,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -26,6 +27,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import com.localeventhub.app.featurebase.common.Colors
 import localeventhub.composeapp.generated.resources.Res
 import localeventhub.composeapp.generated.resources.eye
 import localeventhub.composeapp.generated.resources.hidden
@@ -62,9 +64,12 @@ fun TextField(
             onValueChange = {
                 onValueChange(if (keyboardOptions.keyboardType == KeyboardType.Phone) it.take(10) else it)
             },
-            colors = TextFieldDefaults.colors(
+            colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White
+                unfocusedContainerColor = Color.White,
+                focusedTextColor = Color.Black,
+                unfocusedTextColor = Color.Black,
+                cursorColor = Colors.primary,
             ),
             label = {
                 Text(

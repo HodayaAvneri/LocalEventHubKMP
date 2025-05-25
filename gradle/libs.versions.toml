@@ -58,6 +58,8 @@ permissions-compose = { group = "dev.icerock.moko", name = "permissions-compose"
 permissions-location = { group = "dev.icerock.moko", name = "permissions-location" ,version.ref = "permissions-compose" }
 compass-geolocation = { module = "dev.jordond.compass:geolocation", version.ref = "compass" }
 compass-geolocation-mobile = { module = "dev.jordond.compass:geolocation-mobile", version.ref = "compass" }
+compass-autocomplete = { module = "dev.jordond.compass:autocomplete", version.ref = "compass" }
+compass-autocomplete-mobile = { module = "dev.jordond.compass:autocomplete-mobile", version.ref = "compass" }
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose" ,version.ref = "coil" }
 coil-network = { group = "io.coil-kt.coil3", name = "coil-network-ktor3" ,version.ref = "coil" }
 navigation-compose = { group = "org.jetbrains.androidx.navigation", name = "navigation-compose", version.ref = "navigation-compose"}

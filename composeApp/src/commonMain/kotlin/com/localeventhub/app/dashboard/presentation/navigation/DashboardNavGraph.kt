@@ -36,8 +36,8 @@ fun NavGraphBuilder.bottomBarGraph(
 ) {
     navigation<AppNavigationGraph.DashboardGraph>(startDestination = DashboardRoutes.Events) {
         composable<DashboardRoutes.Events> {
-             EventsScreen(paddingValues){
-                 navController.navigate(DashboardRoutes.AddEvent)
+             EventsScreen(paddingValues){ pageFlag ->
+                 navController.navigate(DashboardRoutes.AddEvent(pageFlag.name))
              }
         }
         composable<DashboardRoutes.Map> {

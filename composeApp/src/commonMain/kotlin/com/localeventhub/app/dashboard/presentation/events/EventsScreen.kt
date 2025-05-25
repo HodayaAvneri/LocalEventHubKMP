@@ -27,6 +27,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -51,6 +53,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.localeventhub.app.auth.presentation.navigation.AuthPageFlag
+import com.localeventhub.app.dashboard.presentation.navigation.EventPageFlag
 import com.localeventhub.app.featurebase.common.Colors
 import com.localeventhub.app.featurebase.presentation.ui.compose.TextTitleMedium
 import localeventhub.composeapp.generated.resources.Res
@@ -68,7 +72,7 @@ data class Post(val username: String, val timeAgo: String, val content: String)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EventsScreen(paddingValues: () -> PaddingValues, onNavigate: () -> Unit) {
+fun EventsScreen(paddingValues: () -> PaddingValues, onNavigate: (EventPageFlag) -> Unit) {
     val posts = listOf(
         Post("test", "1 days ago", "test"),
         Post("test", "1 days ago", "test"),
@@ -84,7 +88,7 @@ fun EventsScreen(paddingValues: () -> PaddingValues, onNavigate: () -> Unit) {
         com.localeventhub.app.getPlatform().name
     }
     Scaffold(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().padding(bottom = paddingValues().calculateBottomPadding()),
         topBar = {
             TopAppBar(
                 modifier = Modifier.shadow(elevation = 5.dp),
@@ -92,7 +96,7 @@ fun EventsScreen(paddingValues: () -> PaddingValues, onNavigate: () -> Unit) {
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = if(platform.startsWith("Android")) Colors.primary else Color.White),
                 actions = {
                     if(!platform.startsWith(prefix = "Android")){
-                        IconButton(onClick = {onNavigate()}){
+                        IconButton(onClick = {onNavigate(EventPageFlag.ADD)}){
                             Icon(
                                 painter = painterResource(Res.drawable.ic_add),
                                 contentDescription = "Add",
@@ -107,7 +111,7 @@ fun EventsScreen(paddingValues: () -> PaddingValues, onNavigate: () -> Unit) {
         containerColor = Color.White,
         floatingActionButton = {
             if(platform.startsWith("Android")){
-                FloatingActionButton(modifier = Modifier.padding(paddingValues()), onClick = {onNavigate()}){
+                FloatingActionButton(onClick = {onNavigate(EventPageFlag.ADD)}){
                     Icon(painter = painterResource(Res.drawable.ic_add), contentDescription = null)
                 }
             }
@@ -115,66 +119,68 @@ fun EventsScreen(paddingValues: () -> PaddingValues, onNavigate: () -> Unit) {
     ) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
             Row(modifier = Modifier.fillMaxWidth().padding(top = 5.dp)) {
-                Box(
-                    modifier = Modifier.fillMaxWidth(0.5f).padding(start = 15.dp)
-                        .clickable { expanded = true }) {
+                ExposedDropdownMenuBox(
+                    modifier = Modifier.fillMaxWidth(0.5f).padding(start = 15.dp),
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded }
+                ) {
+                    // TextField with dropdown icon
                     OutlinedTextField(
                         value = selectedItem,
-                        onValueChange = { },
-                        label = { Text("Filter", color = Color.Black) },
-                        enabled = false,
-                        colors = TextFieldDefaults.colors(
-                            disabledTextColor = Color.Black,
-                            disabledContainerColor = Color.White
-                        ),
-                        trailingIcon = {
-                            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-                        }
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Filter") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
                     )
 
-                    DropdownMenu(
+                    // Dropdown menu items
+                    ExposedDropdownMenu(
                         expanded = expanded,
                         onDismissRequest = { expanded = false }
                     ) {
                         items.forEach { item ->
                             DropdownMenuItem(
+                                text = { Text(item) },
                                 onClick = {
                                     selectedItem = item
                                     expanded = false
-                                },
-                                text = { Text(item) }
+                                }
                             )
                         }
                     }
                 }
-                Box(
-                    modifier = Modifier.fillMaxWidth().padding(start = 15.dp, end = 15.dp)
-                        .clickable { sortExpanded = true }) {
+                ExposedDropdownMenuBox(
+                    modifier = Modifier.fillMaxWidth().padding(start = 15.dp, end = 15.dp),
+                    expanded = sortExpanded,
+                    onExpandedChange = { sortExpanded = !sortExpanded }
+                ) {
+                    // TextField with dropdown icon
                     OutlinedTextField(
                         value = sortSelectedItem,
-                        onValueChange = { },
-                        label = { Text("Sort", color = Color.Black) },
-                        enabled = false,
-                        colors = TextFieldDefaults.colors(
-                            disabledTextColor = Color.Black,
-                            disabledContainerColor = Color.White
-                        ),
-                        trailingIcon = {
-                            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-                        }
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Sort") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
                     )
 
-                    DropdownMenu(
+                    // Dropdown menu items
+                    ExposedDropdownMenu(
                         expanded = sortExpanded,
                         onDismissRequest = { sortExpanded = false }
                     ) {
                         sortItems.forEach { item ->
                             DropdownMenuItem(
+                                text = { Text(item) },
                                 onClick = {
                                     sortSelectedItem = item
                                     sortExpanded = false
-                                },
-                                text = { Text(item) }
+                                }
                             )
                         }
                     }
@@ -185,7 +191,7 @@ fun EventsScreen(paddingValues: () -> PaddingValues, onNavigate: () -> Unit) {
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 items(posts) { post ->
-                    PostItem(post)
+                    PostItem(post,onNavigate)
                     Spacer(modifier = Modifier.height(16.dp))
                 }
             }
@@ -195,7 +201,7 @@ fun EventsScreen(paddingValues: () -> PaddingValues, onNavigate: () -> Unit) {
 }
 
 @Composable
-fun PostItem(post: Post) {
+fun PostItem(post: Post, onNavigate: (EventPageFlag) -> Unit) {
 
     var menuExpand by remember { mutableStateOf(false) }
 
@@ -238,8 +244,12 @@ fun PostItem(post: Post) {
                         expanded = menuExpand,
                         onDismissRequest = { menuExpand = false }
                     ) {
-                        DropdownMenuItem(text = { Text(text = "View") }, onClick = { })
-                        DropdownMenuItem(text = { Text(text = "Edit") }, onClick = { })
+                        DropdownMenuItem(text = { Text(text = "View") }, onClick = {
+                            menuExpand = false
+                            onNavigate(EventPageFlag.VIEW) })
+                        DropdownMenuItem(text = { Text(text = "Edit") }, onClick = {
+                            menuExpand = false
+                            onNavigate(EventPageFlag.UPDATE)})
                         DropdownMenuItem(text = { Text(text = "Delete") }, onClick = { })
                     }
                 }
