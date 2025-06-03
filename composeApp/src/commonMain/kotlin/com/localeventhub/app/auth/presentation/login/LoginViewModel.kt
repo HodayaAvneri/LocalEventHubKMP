@@ -9,11 +9,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import com.localeventhub.app.auth.domain.entity.AuthRequest
 import com.localeventhub.app.auth.domain.entity.AuthResponse
-import com.localeventhub.app.auth.domain.usecase.AuthUseCase
+import com.localeventhub.app.auth.domain.usecase.SignInUseCase
+import com.localeventhub.app.auth.domain.usecase.SignUpUseCase
 import com.localeventhub.app.featurebase.common.ApiResult
+import com.localeventhub.app.featurebase.common.Validation
 import com.localeventhub.app.featurebase.presentation.ui.state.TextFieldState
 
-class LoginViewModel(private val authUseCase: AuthUseCase): ViewModel() {
+class LoginViewModel(private val authUseCase: SignInUseCase): ViewModel() {
 
     private val _emailState = mutableStateOf(TextFieldState())
     var emailState: State<TextFieldState> = _emailState
@@ -32,13 +34,34 @@ class LoginViewModel(private val authUseCase: AuthUseCase): ViewModel() {
         _passwordState.value = _passwordState.value.copy(textValue = password, isError = password.isEmpty())
     }
 
-    fun login(authRequest: AuthRequest){
+    fun validateAndSignIn() {
 
+        if (_emailState.value.textValue.isEmpty()) {
+            _emailState.value = _emailState.value.copy(isError = true)
+            return
+        }
+        if (!Validation.isEmailValid(_emailState.value.textValue)) {
+            _emailState.value = _emailState.value.copy(isError = true)
+            return
+        }
+        if (_passwordState.value.textValue.isEmpty()) {
+            _passwordState.value = _passwordState.value.copy(isError = true)
+            return
+        }
+        login()
+    }
+
+    private fun login() {
         viewModelScope.launch {
-            authUseCase.invoke(authRequest).collect{
+            authUseCase.invoke(
+                AuthRequest(emailState.value.textValue, passwordState.value.textValue)
+            ).collect {
                 _signInResponse.value = it
             }
         }
     }
 
+    fun clearAuthState(){
+        _signInResponse.value = null
+    }
 }

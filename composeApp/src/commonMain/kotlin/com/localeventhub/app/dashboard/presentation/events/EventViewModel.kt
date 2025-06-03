@@ -3,17 +3,11 @@ package com.localeventhub.app.dashboard.presentation.events
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-import com.localeventhub.app.auth.domain.entity.AuthRequest
 import com.localeventhub.app.auth.domain.entity.AuthResponse
-import com.localeventhub.app.auth.domain.usecase.AuthUseCase
-import com.localeventhub.app.dashboard.presentation.navigation.EventPageFlag
 import com.localeventhub.app.featurebase.common.ApiResult
 import com.localeventhub.app.featurebase.presentation.ui.state.TextFieldState
-import io.ktor.sse.END_OF_LINE
 
 class EventViewModel(): ViewModel() {
 

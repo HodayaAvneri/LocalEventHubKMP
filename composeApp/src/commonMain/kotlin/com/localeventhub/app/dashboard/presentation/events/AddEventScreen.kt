@@ -91,11 +91,11 @@ fun AddEventScreen(onNavigate: () -> Unit, viewModel: EventViewModel = koinViewM
         when (signInResponse?.status) {
             Status.SUCCESS -> {
                 val signInResponseData = signInResponse?.data
-                if (signInResponseData?.accessToken != null && signInResponseData.accessToken.isNotEmpty()) {
+                /*if (signInResponseData?.accessToken != null && signInResponseData.accessToken.isNotEmpty()) {
                     onNavigate()
                 } else {
                     uiState = UIState.error("Error")
-                }
+                }*/
             }
 
             Status.ERROR -> {

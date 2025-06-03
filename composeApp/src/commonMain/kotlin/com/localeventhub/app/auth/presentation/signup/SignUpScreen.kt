@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
@@ -34,11 +35,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
 import com.localeventhub.app.auth.presentation.navigation.AuthPageFlag
 import kotlinx.coroutines.launch
 import com.localeventhub.app.featurebase.common.Colors
@@ -49,6 +53,7 @@ import com.localeventhub.app.featurebase.presentation.ui.compose.TextField
 import com.localeventhub.app.featurebase.presentation.ui.compose.TextNormal
 import com.localeventhub.app.featurebase.presentation.ui.compose.TextTitleMedium
 import com.localeventhub.app.featurebase.presentation.ui.state.UIState
+import io.github.vinceglb.filekit.dialogs.FileKitType
 import localeventhub.composeapp.generated.resources.Res
 import localeventhub.composeapp.generated.resources.add_photo
 import localeventhub.composeapp.generated.resources.confirm_password
@@ -63,6 +68,9 @@ import localeventhub.composeapp.generated.resources.name_validation
 import localeventhub.composeapp.generated.resources.password
 import localeventhub.composeapp.generated.resources.password_validation
 import localeventhub.composeapp.generated.resources.sign_up
+import multiplatform.network.cmptoast.showToast
+import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
+import io.github.vinceglb.filekit.path
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -72,7 +80,6 @@ fun SignUpScreen(
     onNavigate: (AuthPageFlag) -> Unit,
     viewModel: SignUpViewModel = koinViewModel<SignUpViewModel>()
 ) {
-
     val signInResponse by viewModel.signUpResponse.collectAsState(initial = null)
     var uiState by remember { mutableStateOf<UIState<Boolean>>(UIState.initial()) }
     val snackBarHostState = remember { SnackbarHostState() }
@@ -82,15 +89,19 @@ fun SignUpScreen(
         when (signInResponse?.status) {
             Status.SUCCESS -> {
                 val signInResponseData = signInResponse?.data
-                if (signInResponseData?.accessToken != null && signInResponseData.accessToken.isNotEmpty()) {
+                if (signInResponseData?.uID != null && signInResponseData.uID.isNotEmpty()) {
                     onNavigate(AuthPageFlag.SIGN_UP)
                 } else {
-                    uiState = UIState.error("Error")
+                    uiState = UIState.initial()
+                    showToast(signInResponseData?.message ?: "Error occurred. Try again!!")
+                    viewModel.clearAuthState()
                 }
             }
 
             Status.ERROR -> {
-                uiState = UIState.error(signInResponse?.message.toString())
+                uiState = UIState.initial()
+                showToast(signInResponse?.message ?: "Error occurred")
+                viewModel.clearAuthState()
             }
 
             Status.LOADING -> {
@@ -111,9 +122,12 @@ fun SignUpScreen(
             when (uiState.status) {
                 UIStatus.INITIAL -> {
                     SignUp(onLoginClick = {
-                       onNavigate(AuthPageFlag.LOGIN)
+                        onNavigate(AuthPageFlag.LOGIN)
                     }, {
-                        onNavigate(AuthPageFlag.SIGN_UP)
+                        if(viewModel.imagePath.isEmpty())
+                            showToast("Profile Image is required")
+                        else
+                            viewModel.validateAndSignUp()
                     })
                 }
 
@@ -144,6 +158,17 @@ fun SignUp(
     onSignUpClick: () -> Unit,
     viewModel: SignUpViewModel = koinViewModel(),
 ) {
+    var showDatePicker by remember {
+        mutableStateOf(false)
+    }
+    val launcher = rememberFilePickerLauncher(
+        type = FileKitType.Image,
+    ) { file ->
+        file?.let {
+            viewModel.imagePath = it.path
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -160,14 +185,25 @@ fun SignUp(
 
             Box(
                 modifier = Modifier.size(100.dp)
+                    .clickable {
+                        launcher.launch()
+                    }
                     .border(2.dp, shape = RoundedCornerShape(100.dp), color = Colors.primary),
                 contentAlignment = Alignment.Center
             ) {
-                Image(
-                    painter = painterResource(Res.drawable.add_photo),
-                    contentDescription = "",
-                    colorFilter = ColorFilter.tint(Color.Gray)
-                )
+                if (viewModel.imagePath.isNotEmpty())
+                    AsyncImage(
+                        modifier = Modifier.size(95.dp).clip(CircleShape),
+                        model = viewModel.imagePath,
+                        contentDescription = null,
+                        contentScale = ContentScale.FillHeight
+                    )
+                else
+                    Image(
+                        painter = painterResource(Res.drawable.add_photo),
+                        contentDescription = "",
+                        colorFilter = ColorFilter.tint(Color.Gray)
+                    )
             }
 
             Spacer(modifier = Modifier.height(16.dp))

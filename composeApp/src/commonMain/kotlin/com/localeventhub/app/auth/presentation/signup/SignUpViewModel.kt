@@ -1,7 +1,9 @@
 package com.localeventhub.app.auth.presentation.signup
 
 import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -9,12 +11,15 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import com.localeventhub.app.auth.domain.entity.AuthRequest
 import com.localeventhub.app.auth.domain.entity.AuthResponse
-import com.localeventhub.app.auth.domain.usecase.AuthUseCase
+import com.localeventhub.app.auth.domain.entity.UserEntity
+import com.localeventhub.app.auth.domain.usecase.SignUpUseCase
 import com.localeventhub.app.featurebase.common.ApiResult
+import com.localeventhub.app.featurebase.common.Validation
 import com.localeventhub.app.featurebase.presentation.ui.state.TextFieldState
 
-class SignUpViewModel(private val authUseCase: AuthUseCase): ViewModel() {
+class SignUpViewModel(private val authUseCase: SignUpUseCase) : ViewModel() {
 
+    var imagePath by mutableStateOf("")
     private val _nameState = mutableStateOf(TextFieldState())
     var nameState: State<TextFieldState> = _nameState
 
@@ -39,20 +44,61 @@ class SignUpViewModel(private val authUseCase: AuthUseCase): ViewModel() {
     }
 
     fun setPassword(password: String) {
-        _passwordState.value = _passwordState.value.copy(textValue = password, isError = password.isEmpty())
+        _passwordState.value =
+            _passwordState.value.copy(textValue = password, isError = password.isEmpty())
     }
 
     fun setConfirmPassword(confirmPassword: String) {
-        _confirmPasswordState.value = _confirmPasswordState.value.copy(textValue = confirmPassword, isError = confirmPassword.isEmpty())
+        _confirmPasswordState.value = _confirmPasswordState.value.copy(
+            textValue = confirmPassword,
+            isError = confirmPassword.isEmpty()
+        )
     }
 
-    fun login(authRequest: AuthRequest){
+    fun validateAndSignUp() {
 
+        if (_nameState.value.textValue.isEmpty()) {
+            _nameState.value = _nameState.value.copy(isError = true)
+            return
+        }
+        if (_emailState.value.textValue.isEmpty()) {
+            _emailState.value = _emailState.value.copy(isError = true)
+            return
+        }
+        if (!Validation.isEmailValid(_emailState.value.textValue)) {
+            _emailState.value = _emailState.value.copy(isError = true)
+            return
+        }
+        if (_passwordState.value.textValue.isEmpty()) {
+            _passwordState.value = _passwordState.value.copy(isError = true)
+            return
+        }
+        if (_confirmPasswordState.value.textValue.isEmpty()) {
+            _confirmPasswordState.value = _confirmPasswordState.value.copy(isError = true)
+            return
+        }
+        if (_passwordState.value.textValue != _confirmPasswordState.value.textValue) {
+            _passwordState.value = _passwordState.value.copy(textValue = "", isError = true)
+            _confirmPasswordState.value =
+                _confirmPasswordState.value.copy(textValue = "", isError = true)
+            return
+        }
+         signUp()
+    }
+
+    private fun signUp() {
         viewModelScope.launch {
-            authUseCase.invoke(authRequest).collect{
+            authUseCase.invoke(
+                AuthRequest(emailState.value.textValue, passwordState.value.textValue),
+                UserEntity("", nameState.value.textValue, emailState.value.textValue, imagePath)
+            ).collect {
                 _signUpResponse.value = it
             }
         }
+    }
+
+    fun clearAuthState(){
+        _signUpResponse.value = null
     }
 
 }

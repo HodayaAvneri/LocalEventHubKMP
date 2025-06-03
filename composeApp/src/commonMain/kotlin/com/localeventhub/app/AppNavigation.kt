@@ -22,13 +22,13 @@ fun AppNavigation() {
 
     val prefsDataStore = koinInject<PrefsDataStore>()
     LaunchedEffect(Unit){
-        PreferenceStorage.getData(prefsDataStore,"id")?.let { id ->
+        PreferenceStorage.getData(prefsDataStore,"user_id")?.let { id ->
             if(id.isNotEmpty()){
-                navController.navigate(com.localeventhub.app.AppNavigationGraph.AuthGraph){ // change to dashboard graph
+                /*navController.navigate(com.localeventhub.app.AppNavigationGraph.DashboardGraph){
                     popUpTo(com.localeventhub.app.AppNavigationGraph.AuthGraph){
                         inclusive = true
                     }
-                }
+                }*/
             }
         }
     }

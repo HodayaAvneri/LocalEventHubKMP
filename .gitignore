@@ -17,3 +17,4 @@ captures
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
 composeApp/src/androidMain/AndroidManifest.xml
+composeApp/src/androidMain/AndroidManifest.xml

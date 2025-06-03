@@ -105,11 +105,11 @@ fun ProfileScreen(
         when (signInResponse?.status) {
             Status.SUCCESS -> {
                 val signInResponseData = signInResponse?.data
-                if (signInResponseData?.accessToken != null && signInResponseData.accessToken.isNotEmpty()) {
+                /*if (signInResponseData?.accessToken != null && signInResponseData.accessToken.isNotEmpty()) {
                     //onNavigate(AuthPageFlag.SIGN_UP)
                 } else {
                     uiState = UIState.error("Error")
-                }
+                }*/
             }
 
             Status.ERROR -> {

@@ -58,6 +58,7 @@ import localeventhub.composeapp.generated.resources.no_account
 import localeventhub.composeapp.generated.resources.password
 import localeventhub.composeapp.generated.resources.password_validation
 import localeventhub.composeapp.generated.resources.sign_up
+import multiplatform.network.cmptoast.showToast
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -77,15 +78,19 @@ fun LoginScreen(
         when (signInResponse?.status) {
             Status.SUCCESS -> {
                 val signInResponseData = signInResponse?.data
-                if (signInResponseData?.accessToken != null && signInResponseData.accessToken.isNotEmpty()) {
+                if (signInResponseData?.uID != null && signInResponseData.uID.isNotEmpty()) {
                     onNavigate(AuthPageFlag.LOGIN)
                 } else {
-                    uiState = UIState.error("Error")
+                    uiState = UIState.initial()
+                    showToast(signInResponseData?.message ?: "Error occurred. Try again!!")
+                    viewModel.clearAuthState()
                 }
             }
 
             Status.ERROR -> {
-                uiState = UIState.error(signInResponse?.message.toString())
+                uiState = UIState.initial()
+                showToast(signInResponse?.message ?: "Error occurred")
+                viewModel.clearAuthState()
             }
 
             Status.LOADING -> {
@@ -106,7 +111,7 @@ fun LoginScreen(
             when (uiState.status) {
                 UIStatus.INITIAL -> {
                     Login(onLoginClick = {
-                       onNavigate(AuthPageFlag.LOGIN)
+                        viewModel.validateAndSignIn()
                     }, {
                         onNavigate(AuthPageFlag.SIGN_UP)
                     })

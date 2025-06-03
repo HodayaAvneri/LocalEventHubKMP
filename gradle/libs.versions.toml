@@ -21,15 +21,18 @@ compass = "1.2.2"
 coil = "3.1.0"
 navigation-compose = "2.8.0-alpha10"
 kotlinxSerializationJson = "1.8.0"
-imagepicker = "0.10.0-beta01"
+imagepicker = "0.10.0-beta02"
 datastore = "1.1.6"
 cmptoast = "1.0.4"
 kotlin-date = "0.6.2"
 mapsCompose = "5.0.4"
 playServicesMaps = "19.0.0"
+firebase = "2.1.0"
 
 pods-google-maps = "9.1.1"
+pods-firebase = "11.13.0"
 pods-google-ios-maps-utils = "6.0.0"
+google-services = "4.4.2"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -75,6 +78,11 @@ kotlin-date = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref =
 maps-compose = { module = "com.google.maps.android:maps-compose", version.ref = "mapsCompose" }
 maps-compose-utils = { module = "com.google.maps.android:maps-compose-utils", version.ref = "mapsCompose" }
 play-services-maps = { module = "com.google.android.gms:play-services-maps", version.ref = "playServicesMaps" }
+firebase-firestore = { module = "dev.gitlive:firebase-firestore", version.ref = "firebase" }
+firebase-common = { module = "dev.gitlive:firebase-common", version.ref = "firebase" }
+firebase-auth = { module = "dev.gitlive:firebase-auth", version.ref = "firebase" }
+firebase-storage = { module = "dev.gitlive:firebase-storage", version.ref = "firebase" }
+image-picker = { group = "io.github.vinceglb", name = "filekit-dialogs-compose", version.ref= "imagepicker" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
@@ -84,3 +92,4 @@ composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "k
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlinxSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kotlinCocoapods = { id = "org.jetbrains.kotlin.native.cocoapods", version.ref = "kotlin" }
+googlePlayServices = { id = "com.google.gms.google-services", version.ref = "google-services"}

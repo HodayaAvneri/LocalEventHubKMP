@@ -9,13 +9,14 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinxSerialization)
     alias(libs.plugins.kotlinCocoapods)
+    alias(libs.plugins.googlePlayServices)
 }
 
 kotlin {
     androidTarget {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
         compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_11)
+            jvmTarget.set(JvmTarget.JVM_17)
         }
     }
     listOf(
@@ -29,7 +30,7 @@ kotlin {
         }
     }
     cocoapods {
-        summary = "Events Descriptio"
+        summary = "Events Description"
         homepage = "Link to the Shared Module homepage"
         version = "1.0"
         ios.deploymentTarget = "16"
@@ -89,6 +90,11 @@ kotlin {
             implementation(libs.coil.network)
             implementation(libs.toast)
             implementation(libs.kotlin.date)
+            implementation(libs.firebase.common)
+            implementation(libs.firebase.auth)
+            implementation(libs.firebase.firestore)
+            implementation(libs.firebase.storage)
+            implementation(libs.image.picker)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
