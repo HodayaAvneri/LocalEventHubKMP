@@ -1,5 +1,6 @@
 package com.localeventhub.app.dashboard.presentation.navigation
 
+import com.localeventhub.app.dashboard.domain.entity.PostEntity
 import kotlinx.serialization.Serializable
 import localeventhub.composeapp.generated.resources.Res
 import localeventhub.composeapp.generated.resources.events
@@ -26,7 +27,7 @@ sealed class DashboardRoutes {
     data object EventDetail: DashboardRoutes()
 
     @Serializable
-    data class AddEvent(val pageFlag: String): DashboardRoutes()
+    data class AddEvent(val pageFlag: String,val id: String = ""): DashboardRoutes()
 
 
 }

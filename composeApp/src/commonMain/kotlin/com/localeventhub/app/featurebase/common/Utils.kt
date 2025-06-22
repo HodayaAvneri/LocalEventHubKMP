@@ -1,9 +1,11 @@
 package com.localeventhub.app.featurebase.common
 
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.daysUntil
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.todayIn
 import kotlin.math.absoluteValue
 
@@ -25,21 +27,19 @@ class Utils {
         }
     }
 
-    fun daysUntilTargetDate(targetDate: String): String {
-        // Parse the target date (assuming format MM/dd/yyyy)
-        val parts = targetDate.split("/")
-        val target = LocalDate(parts[2].toInt(), parts[1].toInt(), parts[0].toInt())
+    fun daysUntilTargetDate(epochMillis: Long): String {
+        val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+        val targetDate = Instant.fromEpochMilliseconds(epochMillis).toLocalDateTime(TimeZone.currentSystemDefault()).date
 
-        // Get current date in current timezone
-        val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-
-        // Calculate days difference
-        val daysDifference = today.daysUntil(target)
+        val daysDiff = targetDate.daysUntil(now)
 
         return when {
-            daysDifference > 0 -> "ends in $daysDifference days"
-            daysDifference < 0 -> "ended ${daysDifference.absoluteValue} days ago"
-            else -> "ends today"
+            daysDiff == 0 -> "Today"
+            daysDiff == 1 -> "1 day ago"
+            daysDiff > 1 -> "$daysDiff days ago"
+            daysDiff == -1 -> "in 1 day"
+            daysDiff < 0 -> "in ${-daysDiff} days"
+            else -> "Unknown"
         }
     }
 

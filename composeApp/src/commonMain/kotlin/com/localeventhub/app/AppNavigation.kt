@@ -7,6 +7,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.localeventhub.app.auth.presentation.navigation.authNavigation
 import com.localeventhub.app.dashboard.presentation.dashboard.DashboardScreen
 import com.localeventhub.app.dashboard.presentation.events.AddEventScreen

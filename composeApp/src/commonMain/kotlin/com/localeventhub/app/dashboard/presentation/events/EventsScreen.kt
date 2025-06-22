@@ -41,6 +41,8 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,13 +52,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
 import com.localeventhub.app.auth.presentation.navigation.AuthPageFlag
+import com.localeventhub.app.dashboard.domain.entity.PostEntity
 import com.localeventhub.app.dashboard.presentation.navigation.EventPageFlag
 import com.localeventhub.app.featurebase.common.Colors
+import com.localeventhub.app.featurebase.common.Status
+import com.localeventhub.app.featurebase.common.UIStatus
+import com.localeventhub.app.featurebase.common.Utils
+import com.localeventhub.app.featurebase.presentation.ui.compose.FullScreenLoadingProgress
+import com.localeventhub.app.featurebase.presentation.ui.compose.LoadingProgress
 import com.localeventhub.app.featurebase.presentation.ui.compose.TextTitleMedium
+import com.localeventhub.app.featurebase.presentation.ui.state.UIState
+import kotlinx.coroutines.launch
 import localeventhub.composeapp.generated.resources.Res
 import localeventhub.composeapp.generated.resources.add_photo
 import localeventhub.composeapp.generated.resources.events
@@ -64,20 +76,19 @@ import localeventhub.composeapp.generated.resources.ic_add
 import localeventhub.composeapp.generated.resources.ic_back
 import localeventhub.composeapp.generated.resources.ic_menu
 import localeventhub.composeapp.generated.resources.ic_profile
+import localeventhub.composeapp.generated.resources.loading
 import localeventhub.composeapp.generated.resources.logo
+import multiplatform.network.cmptoast.showToast
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
-
-data class Post(val username: String, val timeAgo: String, val content: String)
+import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EventsScreen(paddingValues: () -> PaddingValues, onNavigate: (EventPageFlag) -> Unit) {
-    val posts = listOf(
-        Post("test", "1 days ago", "test"),
-        Post("test", "1 days ago", "test"),
-        Post("test", "1 days ago", "test")
-    )
+fun EventsScreen(paddingValues: () -> PaddingValues, onNavigate: (EventPageFlag,String) -> Unit, viewModel: EventViewModel = koinViewModel()) {
+
+    val getAllPostResponse by viewModel.eventListResponse.collectAsState(initial = null)
+    var uiState by remember { mutableStateOf<UIState<List<PostEntity>?>>(UIState.initial()) }
     var expanded by remember { mutableStateOf(false) }
     val items = listOf("All", "Music Festival", "Food Festival", "Donors event")
     var selectedItem by remember { mutableStateOf(items[0]) }
@@ -87,6 +98,28 @@ fun EventsScreen(paddingValues: () -> PaddingValues, onNavigate: (EventPageFlag)
     val platform = remember {
         com.localeventhub.app.getPlatform().name
     }
+    LaunchedEffect(Unit){
+        viewModel.getAllPost()
+    }
+
+    LaunchedEffect(getAllPostResponse?.status) {
+        when (getAllPostResponse?.status) {
+            Status.SUCCESS -> {
+                val response = getAllPostResponse?.data
+                uiState = UIState.success(response)
+            }
+
+            Status.ERROR -> {
+                uiState = UIState.error(getAllPostResponse?.message ?: "")
+
+            }
+            Status.LOADING -> {
+                uiState = UIState.loading()
+            }
+            null -> {}
+        }
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize().padding(bottom = paddingValues().calculateBottomPadding()),
         topBar = {
@@ -96,7 +129,7 @@ fun EventsScreen(paddingValues: () -> PaddingValues, onNavigate: (EventPageFlag)
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = if(platform.startsWith("Android")) Colors.primary else Color.White),
                 actions = {
                     if(!platform.startsWith(prefix = "Android")){
-                        IconButton(onClick = {onNavigate(EventPageFlag.ADD)}){
+                        IconButton(onClick = {onNavigate(EventPageFlag.ADD,"")}){
                             Icon(
                                 painter = painterResource(Res.drawable.ic_add),
                                 contentDescription = "Add",
@@ -111,100 +144,126 @@ fun EventsScreen(paddingValues: () -> PaddingValues, onNavigate: (EventPageFlag)
         containerColor = Color.White,
         floatingActionButton = {
             if(platform.startsWith("Android")){
-                FloatingActionButton(onClick = {onNavigate(EventPageFlag.ADD)}){
+                FloatingActionButton(onClick = {onNavigate(EventPageFlag.ADD,"")}){
                     Icon(painter = painterResource(Res.drawable.ic_add), contentDescription = null)
                 }
             }
         }
     ) { innerPadding ->
-        Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-            Row(modifier = Modifier.fillMaxWidth().padding(top = 5.dp)) {
-                ExposedDropdownMenuBox(
-                    modifier = Modifier.fillMaxWidth(0.5f).padding(start = 15.dp),
-                    expanded = expanded,
-                    onExpandedChange = { expanded = !expanded }
-                ) {
-                    // TextField with dropdown icon
-                    OutlinedTextField(
-                        value = selectedItem,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Filter") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth()
-                    )
+        when (uiState.status) {
+            UIStatus.SUCCESS -> {
+                val posts = uiState.data
+                posts?.let {
+                    Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+                        Row(modifier = Modifier.fillMaxWidth().padding(top = 5.dp)) {
+                            ExposedDropdownMenuBox(
+                                modifier = Modifier.fillMaxWidth(0.5f).padding(start = 15.dp),
+                                expanded = expanded,
+                                onExpandedChange = { expanded = !expanded }
+                            ) {
+                                // TextField with dropdown icon
+                                OutlinedTextField(
+                                    value = selectedItem,
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    label = { Text("Filter") },
+                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                                    modifier = Modifier
+                                        .menuAnchor()
+                                        .fillMaxWidth()
+                                )
 
-                    // Dropdown menu items
-                    ExposedDropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
-                    ) {
-                        items.forEach { item ->
-                            DropdownMenuItem(
-                                text = { Text(item) },
-                                onClick = {
-                                    selectedItem = item
-                                    expanded = false
+                                // Dropdown menu items
+                                ExposedDropdownMenu(
+                                    expanded = expanded,
+                                    onDismissRequest = { expanded = false }
+                                ) {
+                                    items.forEach { item ->
+                                        DropdownMenuItem(
+                                            text = { Text(item) },
+                                            onClick = {
+                                                selectedItem = item
+                                                expanded = false
+                                            }
+                                        )
+                                    }
                                 }
-                            )
+                            }
+                            ExposedDropdownMenuBox(
+                                modifier = Modifier.fillMaxWidth().padding(start = 15.dp, end = 15.dp),
+                                expanded = sortExpanded,
+                                onExpandedChange = { sortExpanded = !sortExpanded }
+                            ) {
+                                // TextField with dropdown icon
+                                OutlinedTextField(
+                                    value = sortSelectedItem,
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    label = { Text("Sort") },
+                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                                    modifier = Modifier
+                                        .menuAnchor()
+                                        .fillMaxWidth()
+                                )
+
+                                // Dropdown menu items
+                                ExposedDropdownMenu(
+                                    expanded = sortExpanded,
+                                    onDismissRequest = { sortExpanded = false }
+                                ) {
+                                    sortItems.forEach { item ->
+                                        DropdownMenuItem(
+                                            text = { Text(item) },
+                                            onClick = {
+                                                sortSelectedItem = item
+                                                sortExpanded = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            items(posts) { post ->
+                                PostItem(post,onNavigate)
+                                Spacer(modifier = Modifier.height(16.dp))
+                            }
                         }
                     }
-                }
-                ExposedDropdownMenuBox(
-                    modifier = Modifier.fillMaxWidth().padding(start = 15.dp, end = 15.dp),
-                    expanded = sortExpanded,
-                    onExpandedChange = { sortExpanded = !sortExpanded }
-                ) {
-                    // TextField with dropdown icon
-                    OutlinedTextField(
-                        value = sortSelectedItem,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Sort") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth()
-                    )
-
-                    // Dropdown menu items
-                    ExposedDropdownMenu(
-                        expanded = sortExpanded,
-                        onDismissRequest = { sortExpanded = false }
-                    ) {
-                        sortItems.forEach { item ->
-                            DropdownMenuItem(
-                                text = { Text(item) },
-                                onClick = {
-                                    sortSelectedItem = item
-                                    sortExpanded = false
-                                }
-                            )
-                        }
+                } ?: run {
+                    Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+                        TextTitleMedium(text = "No Events Found")
                     }
                 }
             }
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-            ) {
-                items(posts) { post ->
-                    PostItem(post,onNavigate)
-                    Spacer(modifier = Modifier.height(16.dp))
+
+            UIStatus.INITIAL,UIStatus.LOADING -> {
+                Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+                    LoadingProgress()
                 }
             }
+
+            UIStatus.ERROR -> {
+                Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+                    TextTitleMedium(text = "Try Again!!!")
+                }
+            }
+
         }
+
     }
 
 }
 
+
 @Composable
-fun PostItem(post: Post, onNavigate: (EventPageFlag) -> Unit) {
-
+fun PostItem(post: PostEntity, onNavigate: (EventPageFlag,String) -> Unit) {
+    println(post)
     var menuExpand by remember { mutableStateOf(false) }
-
+    val utils = remember { Utils() }
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -220,16 +279,17 @@ fun PostItem(post: Post, onNavigate: (EventPageFlag) -> Unit) {
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
+                AsyncImage(
                     modifier = Modifier
                         .size(40.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF90EE90)) // Light green for avatar placeholder
-                )
+                        .clip(CircleShape),
+                    model = post.user?.profileImageUrl ?: "",
+                    contentDescription = "") // Light green for avatar placeholder
                 Spacer(modifier = Modifier.width(8.dp))
                 Column {
-                    Text(text = post.username, fontWeight = FontWeight.Bold)
-                    Text(text = post.timeAgo, fontSize = 12.sp, color = Color.Gray)
+                    Text(text = post.user?.name ?: "", fontWeight = FontWeight.Bold)
+                    if(post.timestamp > 0)
+                    Text(text = utils.daysUntilTargetDate(post.timestamp), fontSize = 12.sp, color = Color.Gray)
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 Box {
@@ -246,10 +306,10 @@ fun PostItem(post: Post, onNavigate: (EventPageFlag) -> Unit) {
                     ) {
                         DropdownMenuItem(text = { Text(text = "View") }, onClick = {
                             menuExpand = false
-                            onNavigate(EventPageFlag.VIEW) })
+                            onNavigate(EventPageFlag.VIEW,post.postId) })
                         DropdownMenuItem(text = { Text(text = "Edit") }, onClick = {
                             menuExpand = false
-                            onNavigate(EventPageFlag.UPDATE)})
+                            onNavigate(EventPageFlag.UPDATE,post.postId)})
                         DropdownMenuItem(text = { Text(text = "Delete") }, onClick = { })
                     }
                 }
@@ -259,17 +319,18 @@ fun PostItem(post: Post, onNavigate: (EventPageFlag) -> Unit) {
             Spacer(modifier = Modifier.height(8.dp))
 
             // Image placeholder
-            Box(
+            AsyncImage(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color(0xFF90EE90)) // Light green placeholder for image
-            )
+                    .clip(RoundedCornerShape(8.dp)),
+                model = post.imageUrl,
+                contentDescription = "",
+                contentScale = ContentScale.Crop) // Light green placeholder for image
 
             Spacer(modifier = Modifier.height(8.dp))
             // Post content
-            Text(text = post.content)
+            Text(text = post.description)
             Spacer(modifier = Modifier.height(4.dp))
             HorizontalDivider(color = Color.LightGray)
             // Action buttons

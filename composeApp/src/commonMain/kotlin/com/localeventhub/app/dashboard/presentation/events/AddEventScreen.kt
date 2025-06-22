@@ -12,15 +12,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -32,7 +30,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -46,11 +43,16 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
+import com.localeventhub.app.dashboard.domain.entity.EventLocation
 import com.localeventhub.app.dashboard.presentation.navigation.EventPageFlag
 import com.localeventhub.app.expect.isApiLevel35
 import com.localeventhub.app.featurebase.common.Colors
@@ -62,14 +64,19 @@ import com.localeventhub.app.featurebase.presentation.ui.state.UIState
 import dev.jordond.compass.Place
 import dev.jordond.compass.autocomplete.Autocomplete
 import dev.jordond.compass.autocomplete.mobile
+import io.github.vinceglb.filekit.dialogs.FileKitType
+import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
+import io.github.vinceglb.filekit.path
 import kotlinx.coroutines.launch
 import localeventhub.composeapp.generated.resources.Res
 import localeventhub.composeapp.generated.resources.add_photo
-import localeventhub.composeapp.generated.resources.email_validation
+import localeventhub.composeapp.generated.resources.description_validation
 import localeventhub.composeapp.generated.resources.events
 import localeventhub.composeapp.generated.resources.ic_back
 import localeventhub.composeapp.generated.resources.loading
+import localeventhub.composeapp.generated.resources.location_hint
 import localeventhub.composeapp.generated.resources.name_validation
+import multiplatform.network.cmptoast.showToast
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -77,7 +84,8 @@ import org.koin.compose.viewmodel.koinViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEventScreen(onNavigate: () -> Unit, viewModel: EventViewModel = koinViewModel()) {
-    val signInResponse by viewModel.eventListResponse.collectAsState(initial = null)
+    val addPostResponse by viewModel.createEventResponse.collectAsState(initial = null)
+    val getPostResponse by viewModel.eventResponse.collectAsState(initial = null)
     var uiState by remember { mutableStateOf<UIState<Boolean>>(UIState.initial()) }
     val snackBarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -87,19 +95,18 @@ fun AddEventScreen(onNavigate: () -> Unit, viewModel: EventViewModel = koinViewM
     val shouldAddInsets = remember {
         isApiLevel35()
     }
-    LaunchedEffect(signInResponse?.status) {
-        when (signInResponse?.status) {
+    LaunchedEffect(addPostResponse?.status) {
+        when (addPostResponse?.status) {
             Status.SUCCESS -> {
-                val signInResponseData = signInResponse?.data
-                /*if (signInResponseData?.accessToken != null && signInResponseData.accessToken.isNotEmpty()) {
-                    onNavigate()
-                } else {
-                    uiState = UIState.error("Error")
-                }*/
+                val response = addPostResponse?.data
+                showToast(response?.message.toString())
+                onNavigate()
             }
 
             Status.ERROR -> {
-                uiState = UIState.error(signInResponse?.message.toString())
+                uiState = UIState.initial()
+                showToast(addPostResponse?.message.toString())
+                viewModel.clearAddPostState()
             }
 
             Status.LOADING -> {
@@ -110,6 +117,35 @@ fun AddEventScreen(onNavigate: () -> Unit, viewModel: EventViewModel = koinViewM
 
         }
     }
+
+    LaunchedEffect(getPostResponse?.status) {
+        when (getPostResponse?.status) {
+            Status.SUCCESS -> {
+                val response = getPostResponse?.data
+                response?.let {
+                    viewModel.postImage.value = response.imageUrl!!
+                    viewModel.setDescription(response.description)
+                    viewModel.tag = if (response.tags.isNotEmpty()) response.tags[0] else ""
+                    viewModel.location = response.location!!
+                }
+                uiState = UIState.initial()
+            }
+
+            Status.ERROR -> {
+                uiState = UIState.initial()
+                showToast(addPostResponse?.message.toString())
+                viewModel.clearAddPostState()
+            }
+
+            Status.LOADING -> {
+                uiState = UIState.loading()
+            }
+
+            else -> {}
+
+        }
+    }
+
 
     Scaffold(
         modifier = if (shouldAddInsets) Modifier.fillMaxSize()
@@ -147,7 +183,12 @@ fun AddEventScreen(onNavigate: () -> Unit, viewModel: EventViewModel = koinViewM
         ) {
             when (uiState.status) {
                 UIStatus.INITIAL -> {
-                    AddEvent(paddingValues, onAddClick = {})
+                    AddEvent(paddingValues, onAddClick = {
+                        if (viewModel.postImage.value.isEmpty())
+                            showToast("Post Image is required")
+                        else
+                            viewModel.validateAndAddPost()
+                    })
                 }
 
                 UIStatus.LOADING -> {
@@ -181,7 +222,14 @@ fun AddEvent(
     var expanded by remember { mutableStateOf(false) }
     val items = listOf("Music Festival", "Food Festival", "Donors event")
     var selectedItem by remember { mutableStateOf(items[0]) }
-
+    viewModel.tag = selectedItem
+    val launcher = rememberFilePickerLauncher(
+        type = FileKitType.Image,
+    ) { file ->
+        file?.let {
+            viewModel.postImage.value = it.path
+        }
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -190,18 +238,30 @@ fun AddEvent(
             .padding(20.dp)
     ) {
         Box(
-            modifier = Modifier.fillMaxWidth().height(150.dp).background(color = Color.LightGray),
+            modifier = Modifier.fillMaxWidth().height(200.dp).background(color = Color.LightGray)
+                .clickable {
+                    launcher.launch()
+                },
             contentAlignment = Alignment.Center
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    painter = painterResource(Res.drawable.add_photo),
+            if (viewModel.postImage.value.isNotEmpty()) {
+                AsyncImage(
+                    modifier = Modifier.fillMaxWidth()
+                        .height(200.dp).clip(RectangleShape),
+                    model = viewModel.postImage.value,
                     contentDescription = "",
-                    tint = Color.Black
+                    contentScale = ContentScale.Crop
                 )
-                Text(modifier = Modifier.padding(top = 5.dp), text = "Attach Image")
+            } else {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        painter = painterResource(Res.drawable.add_photo),
+                        contentDescription = "",
+                        tint = Color.Black
+                    )
+                    Text(modifier = Modifier.padding(top = 5.dp), text = "Attach Image")
+                }
             }
-
         }
         // Description
         TextField(
@@ -210,7 +270,7 @@ fun AddEvent(
                 .padding(vertical = 8.dp),
             hint = "Description",
             isError = { viewModel.descriptionState.value.isError },
-            errorString = { stringResource(Res.string.name_validation) },
+            errorString = { stringResource(Res.string.description_validation) },
             textFieldValue = { viewModel.descriptionState.value.textValue },
             onValueChange = viewModel::setDescription
         )
@@ -241,6 +301,7 @@ fun AddEvent(
                         text = { Text(item) },
                         onClick = {
                             selectedItem = item
+                            viewModel.tag = selectedItem
                             expanded = false
                         }
                     )
@@ -248,8 +309,8 @@ fun AddEvent(
             }
         }
         PlacesAutocomplete()
-        if(viewModel.pageFlag != EventPageFlag.VIEW.name){
-        // Save Button
+        if (viewModel.pageFlag != EventPageFlag.VIEW.name) {
+            // Save Button
             Button(
                 onClick = { onAddClick() },
                 modifier = Modifier
@@ -274,11 +335,11 @@ fun AddEvent(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlacesAutocomplete() {
+fun PlacesAutocomplete(viewModel: EventViewModel = koinViewModel()) {
     val scope = rememberCoroutineScope()
-    val autocomplete = remember { Autocomplete.mobile()   }
+    val autocomplete = remember { Autocomplete.mobile() }
     var autoCompleteExpanded by remember { mutableStateOf(false) }
-    var searchQuery by remember { mutableStateOf("") }
+    var searchQuery by remember { mutableStateOf(viewModel.location?.address ?: "") }
     val places = remember { mutableStateListOf<Place?>() }
     var selectedPlace: Place? by remember { mutableStateOf(null) }
 
@@ -289,7 +350,7 @@ fun PlacesAutocomplete() {
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
-            label = { Text("Location") },
+            label = { Text(text = stringResource(Res.string.location_hint)) },
             modifier = Modifier
                 .menuAnchor()
                 .fillMaxWidth(),
@@ -316,10 +377,20 @@ fun PlacesAutocomplete() {
                 places.forEach { selectionOption ->
                     DropdownMenuItem(
                         text = {
-                            Text(text = selectionOption?.locality ?: selectionOption?.subLocality ?: selectionOption?.country ?: "Unknown Place")
+                            Text(
+                                text = selectionOption?.locality ?: selectionOption?.subLocality
+                                ?: selectionOption?.country ?: "Unknown Place"
+                            )
                         },
                         onClick = {
+                            searchQuery = selectionOption?.locality ?: selectionOption?.subLocality
+                                    ?: selectionOption?.country ?: "Unknown Place"
                             selectedPlace = selectionOption
+                            viewModel.location = EventLocation(
+                                selectedPlace?.coordinates?.latitude ?: 0.0,
+                                selectedPlace?.coordinates?.longitude ?: 0.0,
+                                searchQuery
+                            )
                             autoCompleteExpanded = false
                         }
                     )

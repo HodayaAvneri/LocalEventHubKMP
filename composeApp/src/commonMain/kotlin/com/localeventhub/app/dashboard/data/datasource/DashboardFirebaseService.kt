@@ -1,5 +1,6 @@
 package com.localeventhub.app.dashboard.data.datasource
 
+import com.localeventhub.app.dashboard.data.model.PostDto
 import com.localeventhub.app.dashboard.data.model.UpdateResponseDto
 import com.localeventhub.app.dashboard.data.model.UserDto
 import com.localeventhub.app.expect.getFile
@@ -40,6 +41,58 @@ class DashboardFirebaseService(private val dataStore: PrefsDataStore) {
         } catch (e: FirebaseException) {
             // Handle all possible exceptions
             return UpdateResponseDto("User update failed")
+        }
+    }
+
+    suspend fun addPost(postDto: PostDto): UpdateResponseDto {
+        try {
+                // Upload profile image and get the download URL
+                val fileUri = getFile(postDto.imageUrl!!)
+                val storageRef = Firebase.storage.reference
+                    .child("images").child("posts")
+                    .child("${Clock.System.now().toEpochMilliseconds()}.jpg")
+
+                storageRef.putFile(fileUri)
+
+                val downloadUrl = storageRef.getDownloadUrl()
+                postDto.imageUrl = downloadUrl
+                postDto.userId = PreferenceStorage.getData(dataStore, "user_id").toString()
+                postDto.user = UserDto(postDto.userId,PreferenceStorage.getData(dataStore, "user_name").toString(),PreferenceStorage.getData(dataStore, "user_email").toString(),PreferenceStorage.getData(dataStore, "user_image").toString())
+            Firebase.firestore.collection("POSTS")
+                .add(postDto)
+            // Return success
+            return UpdateResponseDto("Post added successfully")
+        } catch (e: FirebaseException) {
+            // Handle all possible exceptions
+            return UpdateResponseDto("Post add failed")
+        }
+    }
+
+    suspend fun getPosts(): List<PostDto>{
+        try {
+           val response: List<PostDto> = Firebase.firestore.collection("POSTS")
+                .get().documents.map {
+                   val data: PostDto = it.data()
+                   data.copy(postId = it.id)
+               }
+            // Return success
+            return response
+        } catch (e: FirebaseException) {
+            // Handle all possible exceptions
+            return listOf()
+        }
+    }
+
+    suspend fun getPost(id: String): PostDto?{
+        try {
+            val response: PostDto = Firebase.firestore.collection("POSTS")
+                .document(id)
+                .get().data()
+            // Return success
+            return response
+        } catch (e: FirebaseException) {
+            // Handle all possible exceptions
+            return null
         }
     }
 
