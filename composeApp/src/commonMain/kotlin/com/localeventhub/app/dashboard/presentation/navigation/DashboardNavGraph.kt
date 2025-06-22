@@ -44,8 +44,8 @@ fun NavGraphBuilder.bottomBarGraph(
             MapScreen(paddingValues)
         }
         composable<DashboardRoutes.Profile> {
-            ProfileScreen(paddingValues, onNavigate = {
-
+            ProfileScreen(paddingValues, onLogout = {
+                onSessionCleared()
             })
         }
     }

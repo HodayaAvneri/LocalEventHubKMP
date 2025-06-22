@@ -19,7 +19,7 @@ val authDIModule = module {
         AuthDatasource(get())
     }
     single<AuthRepository> {
-        com.localeventhub.app.auth.data.repositoryimpl.AuthRespositoryImpl(get())
+        com.localeventhub.app.auth.data.repositoryimpl.AuthRepositoryImpl(get())
     }
     single {
         SignInUseCase(get())

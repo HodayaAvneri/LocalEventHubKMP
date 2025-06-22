@@ -1,6 +1,5 @@
 package com.localeventhub.app.dashboard.presentation.profile
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -9,7 +8,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
@@ -25,8 +24,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -44,54 +41,49 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
 import com.localeventhub.app.auth.presentation.navigation.AuthPageFlag
-import com.localeventhub.app.auth.presentation.signup.SignUpViewModel
 import com.localeventhub.app.expect.isApiLevel35
 import com.localeventhub.app.featurebase.common.Colors
+import com.localeventhub.app.featurebase.common.PreferenceStorage
+import com.localeventhub.app.featurebase.common.PrefsDataStore
 import com.localeventhub.app.featurebase.common.Status
 import com.localeventhub.app.featurebase.common.UIStatus
 import com.localeventhub.app.featurebase.presentation.ui.compose.FullScreenLoadingProgress
 import com.localeventhub.app.featurebase.presentation.ui.compose.TextField
-import com.localeventhub.app.featurebase.presentation.ui.compose.TextNormal
-import com.localeventhub.app.featurebase.presentation.ui.compose.TextTitleMedium
 import com.localeventhub.app.featurebase.presentation.ui.state.UIState
+import io.github.vinceglb.filekit.dialogs.FileKitType
+import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
+import io.github.vinceglb.filekit.path
 import kotlinx.coroutines.launch
 import localeventhub.composeapp.generated.resources.Res
-import localeventhub.composeapp.generated.resources.add_photo
-import localeventhub.composeapp.generated.resources.confirm_password
-import localeventhub.composeapp.generated.resources.confirm_password_validation
 import localeventhub.composeapp.generated.resources.email
 import localeventhub.composeapp.generated.resources.email_validation
-import localeventhub.composeapp.generated.resources.events
-import localeventhub.composeapp.generated.resources.have_account
-import localeventhub.composeapp.generated.resources.ic_back
 import localeventhub.composeapp.generated.resources.loading
-import localeventhub.composeapp.generated.resources.login
 import localeventhub.composeapp.generated.resources.name
 import localeventhub.composeapp.generated.resources.name_validation
-import localeventhub.composeapp.generated.resources.password
-import localeventhub.composeapp.generated.resources.password_validation
 import localeventhub.composeapp.generated.resources.profile
-import localeventhub.composeapp.generated.resources.sign_up
-import org.jetbrains.compose.resources.painterResource
+import multiplatform.network.cmptoast.showToast
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     paddingValues: () -> PaddingValues,
-    onNavigate: () -> Unit,
-    viewModel: SignUpViewModel = koinViewModel<SignUpViewModel>()
+    onLogout: () -> Unit,
+    viewModel: ProfileViewModel = koinViewModel<ProfileViewModel>()
 ) {
-
-    val signInResponse by viewModel.signUpResponse.collectAsState(initial = null)
+    val prefsDataStore = koinInject<PrefsDataStore>()
+    val updateResponse by viewModel.updateProfileResponse.collectAsState(initial = null)
     var uiState by remember { mutableStateOf<UIState<Boolean>>(UIState.initial()) }
     val snackBarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -101,19 +93,25 @@ fun ProfileScreen(
     val shouldAddInsets = remember {
         isApiLevel35()
     }
-    LaunchedEffect(signInResponse?.status) {
-        when (signInResponse?.status) {
+    LaunchedEffect(Unit){
+        viewModel.setInitData(PreferenceStorage.getData(prefsDataStore,"user_id").toString(),
+            PreferenceStorage.getData(prefsDataStore,"user_image").toString(),
+            PreferenceStorage.getData(prefsDataStore,"user_name").toString(),
+            PreferenceStorage.getData(prefsDataStore,"user_email").toString())
+    }
+    LaunchedEffect(updateResponse?.status) {
+        when (updateResponse?.status) {
             Status.SUCCESS -> {
-                val signInResponseData = signInResponse?.data
-                /*if (signInResponseData?.accessToken != null && signInResponseData.accessToken.isNotEmpty()) {
-                    //onNavigate(AuthPageFlag.SIGN_UP)
-                } else {
-                    uiState = UIState.error("Error")
-                }*/
+                val updateResponseData = updateResponse?.data
+                showToast(updateResponseData?.message ?: "")
+                uiState = UIState.initial()
+                viewModel.clearAuthState()
             }
 
             Status.ERROR -> {
-                uiState = UIState.error(signInResponse?.message.toString())
+                uiState = UIState.initial()
+                showToast(updateResponse?.message ?: "Error occurred")
+                viewModel.clearAuthState()
             }
 
             Status.LOADING -> {
@@ -124,6 +122,7 @@ fun ProfileScreen(
 
         }
     }
+
 
     Scaffold(
         modifier = if(shouldAddInsets) Modifier.fillMaxSize().consumeWindowInsets(WindowInsets.statusBars) else Modifier.fillMaxSize(),
@@ -150,7 +149,7 @@ fun ProfileScreen(
         ) {
             when (uiState.status) {
                 UIStatus.INITIAL -> {
-                    Profile(paddingValues)
+                    Profile(paddingValues, onLogout = onLogout)
                 }
 
                 UIStatus.LOADING -> {
@@ -177,8 +176,17 @@ fun ProfileScreen(
 @Composable
 fun Profile(
     paddingValues: () -> PaddingValues,
-    viewModel: SignUpViewModel = koinViewModel(),
+    viewModel: ProfileViewModel = koinViewModel(),
+    onLogout: () -> Unit
 ) {
+    val launcher = rememberFilePickerLauncher(
+        type = FileKitType.Image,
+    ) { file ->
+        file?.let {
+            viewModel.imagePath = it.path
+            viewModel.isProfileImageUpdated = true
+        }
+    }
     Column(
         modifier = Modifier
             .padding(paddingValues())
@@ -202,13 +210,17 @@ fun Profile(
             ) {
                 Box(
                     modifier = Modifier.size(100.dp)
+                        .clickable {
+                            launcher.launch()
+                        }
                         .border(2.dp, shape = RoundedCornerShape(100.dp), color = Colors.primary),
                     contentAlignment = Alignment.Center
                 ) {
-                    Image(
-                        painter = painterResource(Res.drawable.add_photo),
-                        contentDescription = "",
-                        colorFilter = ColorFilter.tint(Color.Gray)
+                    AsyncImage(
+                        modifier = Modifier.size(95.dp).clip(CircleShape),
+                        model = viewModel.imagePath,
+                        contentDescription = null,
+                        contentScale = ContentScale.FillHeight
                     )
                 }
                 // Name
@@ -222,24 +234,24 @@ fun Profile(
                     textFieldValue = { viewModel.nameState.value.textValue },
                     onValueChange = viewModel::setName
                 )
-                // Email
+                /*// Email
                 TextField(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 18.dp),
+                        .padding(bottom = 8.dp),
                     hint = stringResource(Res.string.email),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                     isError = { viewModel.emailState.value.isError },
                     errorString = { stringResource(Res.string.email_validation) },
                     textFieldValue = { viewModel.emailState.value.textValue },
                     onValueChange = viewModel::setEmail
-                )
+                )*/
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center
                 ) {
                     OutlinedButton(
-                        onClick = { },
+                        onClick = { viewModel.validateAndUpdate()},
                         modifier = Modifier.padding(end = 10.dp)
                             .height(50.dp),
                         shape = RoundedCornerShape(25.dp),
@@ -252,7 +264,7 @@ fun Profile(
                     }
 
                     Button(
-                        onClick = { },
+                        onClick = {onLogout() },
                         modifier = Modifier.padding(start = 10.dp)
                             .height(50.dp),
                         shape = RoundedCornerShape(25.dp),

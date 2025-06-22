@@ -51,10 +51,13 @@ class AuthFirebaseService(private val dataStore: PrefsDataStore) {
             userDto.profileImageUrl = downloadUrl
             userDto.userId = firebaseUser.uid
             // Save user data to Firestore
-            Firebase.firestore.collection("users")
+            Firebase.firestore.collection("USERS")
                 .document(firebaseUser.uid)
                 .set(userDto)
             PreferenceStorage.saveData(dataStore, "user_id", firebaseUser.uid)
+            PreferenceStorage.saveData(dataStore, "user_image", downloadUrl)
+            PreferenceStorage.saveData(dataStore, "user_name", userDto.name)
+            PreferenceStorage.saveData(dataStore, "user_email", userDto.email)
             // Return success
             return AuthResponseDto(firebaseUser.uid, "")
         } catch (e: FirebaseAuthUserCollisionException) {
@@ -77,7 +80,14 @@ class AuthFirebaseService(private val dataStore: PrefsDataStore) {
             )
             val firebaseUser = authResult.user
                 ?: return AuthResponseDto(null, "Authentication failed: User is null")
+            val userDto: UserDto = Firebase.firestore.collection("USERS")
+                .document(firebaseUser.uid)
+                .get().data()
             PreferenceStorage.saveData(dataStore, "user_id", firebaseUser.uid)
+            PreferenceStorage.saveData(dataStore, "user_image", userDto.profileImageUrl)
+            PreferenceStorage.saveData(dataStore, "user_name", userDto.name)
+            PreferenceStorage.saveData(dataStore, "user_email", userDto.email)
+
             // Return success
             return AuthResponseDto(firebaseUser.uid, "")
         } catch (e: FirebaseException) {

@@ -158,9 +158,6 @@ fun SignUp(
     onSignUpClick: () -> Unit,
     viewModel: SignUpViewModel = koinViewModel(),
 ) {
-    var showDatePicker by remember {
-        mutableStateOf(false)
-    }
     val launcher = rememberFilePickerLauncher(
         type = FileKitType.Image,
     ) { file ->

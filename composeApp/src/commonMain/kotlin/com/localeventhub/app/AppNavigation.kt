@@ -48,7 +48,7 @@ fun AppNavigation() {
         }) {
 
         authNavigation(navController) {
-            navController.navigate(AppNavigationGraph.DashboardGraph) { // next screen graph
+            navController.navigate(AppNavigationGraph.DashboardGraph) {
                 popUpTo(AppNavigationGraph.AuthGraph) {
                     inclusive = true
                 }
