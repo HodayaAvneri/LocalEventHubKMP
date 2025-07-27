@@ -70,6 +70,8 @@ fun TextField(
                 focusedTextColor = Color.Black,
                 unfocusedTextColor = Color.Black,
                 cursorColor = Colors.primary,
+                disabledBorderColor = Color.Black,
+                disabledTextColor = Color.Black
             ),
             label = {
                 Text(

@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -26,6 +25,7 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -52,7 +52,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
-import com.localeventhub.app.dashboard.domain.entity.EventLocation
+import com.localeventhub.app.dashboard.domain.entity.EventLocationEntity
 import com.localeventhub.app.dashboard.presentation.navigation.EventPageFlag
 import com.localeventhub.app.expect.isApiLevel35
 import com.localeventhub.app.featurebase.common.Colors
@@ -75,7 +75,6 @@ import localeventhub.composeapp.generated.resources.events
 import localeventhub.composeapp.generated.resources.ic_back
 import localeventhub.composeapp.generated.resources.loading
 import localeventhub.composeapp.generated.resources.location_hint
-import localeventhub.composeapp.generated.resources.name_validation
 import multiplatform.network.cmptoast.showToast
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -85,7 +84,7 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun AddEventScreen(onNavigate: () -> Unit, viewModel: EventViewModel = koinViewModel()) {
     val addPostResponse by viewModel.createEventResponse.collectAsState(initial = null)
-    val getPostResponse by viewModel.eventResponse.collectAsState(initial = null)
+    val getPostResponse by viewModel.getEventResponse.collectAsState(initial = null)
     var uiState by remember { mutableStateOf<UIState<Boolean>>(UIState.initial()) }
     val snackBarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -106,7 +105,7 @@ fun AddEventScreen(onNavigate: () -> Unit, viewModel: EventViewModel = koinViewM
             Status.ERROR -> {
                 uiState = UIState.initial()
                 showToast(addPostResponse?.message.toString())
-                viewModel.clearAddPostState()
+                viewModel.clearState()
             }
 
             Status.LOADING -> {
@@ -123,6 +122,7 @@ fun AddEventScreen(onNavigate: () -> Unit, viewModel: EventViewModel = koinViewM
             Status.SUCCESS -> {
                 val response = getPostResponse?.data
                 response?.let {
+                    viewModel.post = response
                     viewModel.postImage.value = response.imageUrl!!
                     viewModel.setDescription(response.description)
                     viewModel.tag = if (response.tags.isNotEmpty()) response.tags[0] else ""
@@ -134,7 +134,7 @@ fun AddEventScreen(onNavigate: () -> Unit, viewModel: EventViewModel = koinViewM
             Status.ERROR -> {
                 uiState = UIState.initial()
                 showToast(addPostResponse?.message.toString())
-                viewModel.clearAddPostState()
+                viewModel.clearState()
             }
 
             Status.LOADING -> {
@@ -221,13 +221,14 @@ fun AddEvent(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val items = listOf("Music Festival", "Food Festival", "Donors event")
-    var selectedItem by remember { mutableStateOf(items[0]) }
+    var selectedItem by remember { mutableStateOf( if(viewModel.tag.isNotEmpty() && items.contains(viewModel.tag)) viewModel.tag else items[0]) }
     viewModel.tag = selectedItem
     val launcher = rememberFilePickerLauncher(
         type = FileKitType.Image,
     ) { file ->
         file?.let {
             viewModel.postImage.value = it.path
+            viewModel.isPostImageUpdated = true
         }
     }
     Column(
@@ -240,7 +241,9 @@ fun AddEvent(
         Box(
             modifier = Modifier.fillMaxWidth().height(200.dp).background(color = Color.LightGray)
                 .clickable {
-                    launcher.launch()
+                    if (viewModel.pageFlag != EventPageFlag.VIEW.name) {
+                        launcher.launch()
+                    }
                 },
             contentAlignment = Alignment.Center
         ) {
@@ -272,7 +275,8 @@ fun AddEvent(
             isError = { viewModel.descriptionState.value.isError },
             errorString = { stringResource(Res.string.description_validation) },
             textFieldValue = { viewModel.descriptionState.value.textValue },
-            onValueChange = viewModel::setDescription
+            onValueChange = viewModel::setDescription,
+            enabled = {viewModel.pageFlag != EventPageFlag.VIEW.name }
         )
         ExposedDropdownMenuBox(
             modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
@@ -288,7 +292,12 @@ fun AddEvent(
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 modifier = Modifier
                     .menuAnchor()
-                    .fillMaxWidth()
+                    .fillMaxWidth(),
+                enabled = viewModel.pageFlag != EventPageFlag.VIEW.name,
+                colors = OutlinedTextFieldDefaults.colors(
+                    disabledBorderColor = Color.Black,
+                    disabledTextColor = Color.Black
+                )
             )
 
             // Dropdown menu items
@@ -355,6 +364,9 @@ fun PlacesAutocomplete(viewModel: EventViewModel = koinViewModel()) {
                 .menuAnchor()
                 .fillMaxWidth(),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            enabled = viewModel.pageFlag != EventPageFlag.VIEW.name,
+            colors = OutlinedTextFieldDefaults.colors(disabledBorderColor = Color.Black,
+                disabledTextColor = Color.Black),
             keyboardActions = KeyboardActions(
                 onSearch = {
                     scope.launch {
@@ -386,7 +398,7 @@ fun PlacesAutocomplete(viewModel: EventViewModel = koinViewModel()) {
                             searchQuery = selectionOption?.locality ?: selectionOption?.subLocality
                                     ?: selectionOption?.country ?: "Unknown Place"
                             selectedPlace = selectionOption
-                            viewModel.location = EventLocation(
+                            viewModel.location = EventLocationEntity(
                                 selectedPlace?.coordinates?.latitude ?: 0.0,
                                 selectedPlace?.coordinates?.longitude ?: 0.0,
                                 searchQuery

@@ -12,14 +12,15 @@ import dev.jordond.compass.geolocation.LocationRequest
 import dev.jordond.compass.geolocation.TrackingStatus
 import dev.jordond.compass.geolocation.isPermissionDeniedForever
 import dev.jordond.compass.geolocation.mobile
+import kotlinx.coroutines.flow.first
 
 @Composable
 fun LocationTracking(onLocationChanged : (Location) -> Unit){
     val geoLocator = remember { Geolocator.mobile() }
     LaunchedEffect(Unit){
-        geoLocator.locationUpdates.collect { location ->
-            println("Location update - $location")
-            onLocationChanged(location)
+        geoLocator.locationUpdates.first {
+            onLocationChanged(it)
+            true
         }
     }
     LaunchedEffect(Unit){

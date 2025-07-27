@@ -8,6 +8,7 @@ import kotlinx.datetime.daysUntil
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.todayIn
 import kotlin.math.absoluteValue
+import kotlin.math.*
 
 class Utils {
 
@@ -41,6 +42,19 @@ class Utils {
             daysDiff < 0 -> "in ${-daysDiff} days"
             else -> "Unknown"
         }
+    }
+
+    private fun Double.toRadians(): Double = this * (PI / 180)
+
+    fun haversineDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+        val earthRadius = 6371000.0 // meters
+        val dLat = (lat2 - lat1).toRadians()
+        val dLon = (lon2 - lon1).toRadians()
+        val a = sin(dLat / 2).pow(2) +
+                cos(lat1.toRadians()) * cos(lat2.toRadians()) *
+                sin(dLon / 2).pow(2)
+        val c = 2 * atan2(sqrt(a), sqrt(1 - a))
+        return earthRadius * c
     }
 
 }
