@@ -13,6 +13,7 @@ actual fun GoogleMap(
     modifier: Modifier,
     currentLocationPosition: LatLng,
     markerPosition: LatLng,
+    title: String,
     onMapClick: (LatLng) -> Unit
 ) {
     val cameraPositionState = rememberCameraPositionState {
@@ -40,8 +41,8 @@ actual fun GoogleMap(
                     markerPosition.longitude
                 )
             ),
-            title = "Marker",
-            snippet = "Sample marker"
+            title = title,
+            snippet = ""
         )
     }
 }

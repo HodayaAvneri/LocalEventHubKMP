@@ -15,5 +15,10 @@
 		<key>UIImageRespectsSafeAreaInsets</key>
 		<false/>
 	</dict>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Location is used to track the user and retrieve the coordinates in a real time.</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>Location is used to track the user and retrieve the coordinates in a real time.</string>
+
 </dict>
 </plist>

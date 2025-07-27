@@ -12,8 +12,11 @@ androidx-lifecycle = "2.8.4"
 androidx-testExt = "1.2.1"
 composeMultiplatform = "1.6.11"
 junit = "4.13.2"
+kotestFrameworkEngine = "5.9.1"
+kotestRunnerJunit5 = "5.8.0"
 kotlin = "2.1.21"
 core-splashscreen = "1.0.1"
+kotlinxCoroutinesTest = "1.7.3"
 ktor = "3.1.1"
 koin = "4.0.1"
 permissions-compose = "0.19.1"
@@ -33,9 +36,16 @@ pods-google-maps = "9.1.1"
 pods-firebase = "11.13.0"
 pods-google-ios-maps-utils = "6.0.0"
 google-services = "4.4.2"
+coroutinesTest = "1.10.1"
+turbine = "1.2.0"
 
 [libraries]
+kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.ref = "kotestFrameworkEngine" }
+kotest-framework-engine = { module = "io.kotest:kotest-framework-engine", version.ref = "kotestFrameworkEngine" }
+kotest-property = { module = "io.kotest:kotest-property", version.ref = "kotestFrameworkEngine" }
+kotest-runner-junit5 = { module = "io.kotest:kotest-runner-junit5", version.ref = "kotestRunnerJunit5" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutinesTest" }
 kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 junit = { module = "junit:junit", version.ref = "junit" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
@@ -62,6 +72,7 @@ koin-compose = {module = "io.insert-koin:koin-compose"}
 koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel" }
 koin-compose-viewmodel-navigation = { module = "io.insert-koin:koin-compose-viewmodel-navigation"}
 koin-android = { module = "io.insert-koin:koin-android"}
+koin-test = { module = "io.insert-koin:koin-test"}
 permissions-compose = { group = "dev.icerock.moko", name = "permissions-compose" ,version.ref = "permissions-compose" }
 permissions-location = { group = "dev.icerock.moko", name = "permissions-location" ,version.ref = "permissions-compose" }
 compass-geolocation = { module = "dev.jordond.compass:geolocation", version.ref = "compass" }
@@ -83,6 +94,7 @@ firebase-common = { module = "dev.gitlive:firebase-common", version.ref = "fireb
 firebase-auth = { module = "dev.gitlive:firebase-auth", version.ref = "firebase" }
 firebase-storage = { module = "dev.gitlive:firebase-storage", version.ref = "firebase" }
 image-picker = { group = "io.github.vinceglb", name = "filekit-dialogs-compose", version.ref= "imagepicker" }
+turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

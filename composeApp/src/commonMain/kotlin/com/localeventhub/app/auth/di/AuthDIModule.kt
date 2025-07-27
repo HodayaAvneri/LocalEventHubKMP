@@ -12,11 +12,9 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 val authDIModule = module {
-    single {
+
+    single<AuthDatasource> {
         AuthFirebaseService(get())
-    }
-    single {
-        AuthDatasource(get())
     }
     single<AuthRepository> {
         com.localeventhub.app.auth.data.repositoryimpl.AuthRepositoryImpl(get())

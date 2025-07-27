@@ -8,6 +8,7 @@ expect fun GoogleMap(
     modifier: Modifier = Modifier,
     currentLocationPosition: LatLng,
     markerPosition: LatLng,
+    title: String,
     onMapClick: (LatLng) -> Unit = {}
 )
 

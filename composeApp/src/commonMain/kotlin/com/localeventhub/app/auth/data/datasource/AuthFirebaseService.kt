@@ -26,9 +26,9 @@ import dev.gitlive.firebase.storage.File
 import dev.gitlive.firebase.storage.storage
 import kotlinx.datetime.Clock
 
-class AuthFirebaseService(private val dataStore: PrefsDataStore) {
+class AuthFirebaseService(private val dataStore: PrefsDataStore): AuthDatasource {
 
-    suspend fun signUp(authRequestDto: AuthRequestDto, userDto: UserDto): AuthResponseDto {
+    override suspend fun signUp(authRequestDto: AuthRequestDto, userDto: UserDto): AuthResponseDto {
         // Sign in using the provided email and password
         try {
             val authResult = Firebase.auth.createUserWithEmailAndPassword(
@@ -69,7 +69,7 @@ class AuthFirebaseService(private val dataStore: PrefsDataStore) {
 
     }
 
-    suspend fun signIn(authRequestDto: AuthRequestDto): AuthResponseDto {
+    override suspend fun signIn(authRequestDto: AuthRequestDto): AuthResponseDto {
         // Sign in using the provided email and password
         try {
             val authResult = Firebase.auth.signInWithCredential(

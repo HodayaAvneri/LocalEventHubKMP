@@ -2,6 +2,7 @@ package com.localeventhub.app.expect
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.interop.UIKitView
@@ -28,6 +29,7 @@ actual fun GoogleMap(
     modifier: Modifier,
     currentLocationPosition: LatLng,
     markerPosition: LatLng,
+    title: String,
     onMapClick: (LatLng) -> Unit
 ) {
     val mapView = remember { GMSMapView() }
@@ -37,11 +39,24 @@ actual fun GoogleMap(
         zoom = 10.0f
     )
     val cameraUpdate = GMSCameraUpdate.setCamera(cameraPosition)
+
+    // Create and configure the marker
+    LaunchedEffect(markerPosition, title) {
+        val marker = GMSMarker().apply {
+            position = cameraPosition.target
+            this.title = title
+            map = mapView // Attach the marker to the map
+        }
+    }
+
     mapView.moveCamera(cameraUpdate)
 
     UIKitView(
-        modifier = Modifier.fillMaxSize(),
-        factory = { mapView }
+        modifier = modifier.fillMaxSize(),
+        factory = { mapView },
+        update = { view ->
+            // Optional: Handle updates to the map view if needed
+        }
     )
 
 }

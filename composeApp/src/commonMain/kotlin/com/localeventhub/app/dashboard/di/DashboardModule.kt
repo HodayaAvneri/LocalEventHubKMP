@@ -16,16 +16,14 @@ import com.localeventhub.app.dashboard.domain.usecase.UpdatePostLikeUseCase
 import com.localeventhub.app.dashboard.domain.usecase.UpdatePostUseCase
 import com.localeventhub.app.dashboard.domain.usecase.UpdateUserUseCase
 import com.localeventhub.app.dashboard.presentation.events.EventViewModel
+import com.localeventhub.app.dashboard.presentation.map.MapViewModel
 import com.localeventhub.app.dashboard.presentation.profile.ProfileViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 val dashboardDIModule = module {
-    single {
+    single<DashboardDatasource> {
         DashboardFirebaseService(get())
-    }
-    single {
-        DashboardDatasource(get())
     }
     single<DashboardRepository> {
         DashboardRepositoryImpl(get())
@@ -62,4 +60,6 @@ val dashboardDIModule = module {
     }
     viewModel { ProfileViewModel(get()) }
     viewModel { EventViewModel(get(),get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { MapViewModel(get()) }
+
 }

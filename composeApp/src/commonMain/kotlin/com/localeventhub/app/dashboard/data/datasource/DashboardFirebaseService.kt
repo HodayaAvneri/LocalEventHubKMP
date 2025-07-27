@@ -16,9 +16,9 @@ import dev.gitlive.firebase.firestore.firestore
 import dev.gitlive.firebase.storage.storage
 import kotlinx.datetime.Clock
 
-class DashboardFirebaseService(private val dataStore: PrefsDataStore) {
+class DashboardFirebaseService(private val dataStore: PrefsDataStore): DashboardDatasource {
 
-    suspend fun updateUser(userDto: UserDto): UpdateResponseDto {
+    override suspend fun updateUser(userDto: UserDto): UpdateResponseDto {
         // Sign in using the provided email and password
         try {
             if (userDto.shouldUpdateProfile) {
@@ -53,7 +53,7 @@ class DashboardFirebaseService(private val dataStore: PrefsDataStore) {
         }
     }
 
-    suspend fun addPost(postDto: PostDto): UpdateResponseDto {
+    override suspend fun addPost(postDto: PostDto): UpdateResponseDto {
         try {
             // Upload profile image and get the download URL
             val fileUri = getFile(postDto.imageUrl!!)
@@ -82,7 +82,7 @@ class DashboardFirebaseService(private val dataStore: PrefsDataStore) {
         }
     }
 
-    suspend fun getPosts(): List<PostDto> {
+    override suspend fun getPosts(): List<PostDto> {
         try {
             val response: List<PostDto> = Firebase.firestore.collection("POSTS").orderBy("timestamp",Direction.DESCENDING)
                 .get().documents.map {
@@ -97,7 +97,7 @@ class DashboardFirebaseService(private val dataStore: PrefsDataStore) {
         }
     }
 
-    suspend fun getPost(id: String): PostDto? {
+    override suspend fun getPost(id: String): PostDto? {
         try {
             val response: PostDto = Firebase.firestore.collection("POSTS")
                 .document(id)
@@ -110,7 +110,7 @@ class DashboardFirebaseService(private val dataStore: PrefsDataStore) {
         }
     }
 
-    suspend fun updatePost(postDto: PostDto): UpdateResponseDto {
+    override suspend fun updatePost(postDto: PostDto): UpdateResponseDto {
         try {
             if (postDto.shouldUpdatePhoto) {
                 // Upload profile image and get the download URL
@@ -135,7 +135,7 @@ class DashboardFirebaseService(private val dataStore: PrefsDataStore) {
         }
     }
 
-    suspend fun deletePost(id: String): UpdateResponseDto {
+    override suspend fun deletePost(id: String): UpdateResponseDto {
         try {
             Firebase.firestore.collection("POSTS")
                 .document(id)
@@ -147,7 +147,7 @@ class DashboardFirebaseService(private val dataStore: PrefsDataStore) {
         }
     }
 
-    suspend fun updateLike(id: String, likedUserList: MutableList<String>): UpdateResponseDto {
+    override suspend fun updateLike(id: String, likedUserList: MutableList<String>): UpdateResponseDto {
         try {
             Firebase.firestore.collection("POSTS")
                 .document(id).update("likedBy" to likedUserList)
@@ -158,7 +158,7 @@ class DashboardFirebaseService(private val dataStore: PrefsDataStore) {
         }
     }
 
-    suspend fun getComments(postId: String): List<CommentDto> {
+    override suspend fun getComments(postId: String): List<CommentDto> {
         try {
             val response: List<CommentDto> = Firebase.firestore.collection("POSTS")
                 .document(postId).collection("COMMENTS").orderBy("timestamp").get().documents.map {
@@ -173,7 +173,7 @@ class DashboardFirebaseService(private val dataStore: PrefsDataStore) {
         }
     }
 
-    suspend fun addComment(id: String,commentDto: CommentDto): AddCommentResponseDto{
+    override suspend fun addComment(id: String,commentDto: CommentDto): AddCommentResponseDto{
         try {
             val comment = commentDto.copy(userDto = UserDto(
                 PreferenceStorage.getData(dataStore, "user_id").toString(),
@@ -191,7 +191,7 @@ class DashboardFirebaseService(private val dataStore: PrefsDataStore) {
         }
     }
 
-    suspend fun deleteComment(postId: String,commentId: String): UpdateResponseDto{
+    override suspend fun deleteComment(postId: String,commentId: String): UpdateResponseDto{
         try {
             Firebase.firestore.collection("POSTS")
                 .document(postId).collection("COMMENTS").document(commentId).delete()
