@@ -414,14 +414,16 @@ fun PostItem(
                             menuExpand = false
                             onNavigate(EventPageFlag.VIEW, post.postId)
                         })
-                        DropdownMenuItem(text = { Text(text = "Edit") }, onClick = {
-                            menuExpand = false
-                            onNavigate(EventPageFlag.UPDATE, post.postId)
-                        })
-                        DropdownMenuItem(text = { Text(text = "Delete") }, onClick = {
-                            menuExpand = false
-                            onDelete(post.postId)
-                        })
+                        if(userid == post.userId){
+                            DropdownMenuItem(text = { Text(text = "Edit") }, onClick = {
+                                menuExpand = false
+                                onNavigate(EventPageFlag.UPDATE, post.postId)
+                            })
+                            DropdownMenuItem(text = { Text(text = "Delete") }, onClick = {
+                                menuExpand = false
+                                onDelete(post.postId)
+                            })
+                        }
                     }
                 }
 
