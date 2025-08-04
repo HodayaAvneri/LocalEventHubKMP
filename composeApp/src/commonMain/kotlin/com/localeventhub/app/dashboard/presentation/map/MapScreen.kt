@@ -30,35 +30,27 @@ import multiplatform.network.cmptoast.showToast
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun MapScreen(paddingValues: () -> PaddingValues, viewModel: MapViewModel = koinViewModel()) {
-
+fun MapScreen(
+    paddingValues: () -> PaddingValues,
+    viewModel: MapViewModel = koinViewModel()
+) {
     val getAllPostResponse by viewModel.getEventListResponse.collectAsState(initial = null)
     var uiState by remember { mutableStateOf<UIState<List<PostEntity>?>>(UIState.initial()) }
-    var getCurrentLocation by remember { mutableStateOf(false) }
+    var waitingForLocation by remember { mutableStateOf(false) }
     val utils = remember { Utils() }
-    val postList = remember {
-        mutableStateListOf<PostEntity>()
-    }
-    var markerDatum by remember { mutableStateOf(MarkerDatum()) }
-    var title by remember { mutableStateOf("") }
+    val postList = remember { mutableStateListOf<PostEntity>() }
+    val markerList = remember { mutableStateListOf<Pair<LatLng, String>>() }
+    var currentLocation by remember { mutableStateOf<LatLng?>(null) }
 
-    LaunchedEffect(Unit){
-        viewModel.getAllPost()
-    }
+    LaunchedEffect(Unit) { viewModel.getAllPost() }
+
     LaunchedEffect(getAllPostResponse?.status) {
         when (getAllPostResponse?.status) {
             Status.SUCCESS -> {
-                val response = getAllPostResponse?.data
-                response?.let {
-                    postList.clear()
-                    postList.addAll(response)
-                }
-                uiState = UIState.success(response)
-                if(postList.isNotEmpty()){
-                    getCurrentLocation = true
-                }else{
-                    showToast("No Events Found")
-                }
+                postList.clear()
+                getAllPostResponse?.data?.let(postList::addAll)
+                uiState = UIState.success(postList)
+                if (postList.isNotEmpty()) waitingForLocation = true else showToast("No Events Found")
             }
 
             Status.ERROR -> {
@@ -66,65 +58,52 @@ fun MapScreen(paddingValues: () -> PaddingValues, viewModel: MapViewModel = koin
                 viewModel.resetState()
             }
 
-            Status.LOADING -> {
-                uiState = UIState.loading()
-            }
-
+            Status.LOADING -> uiState = UIState.loading()
             null -> {}
         }
     }
+
     Column(
         modifier = Modifier.fillMaxSize().padding(paddingValues()),
         verticalArrangement = Arrangement.Center
     ) {
         when (uiState.status) {
             UIStatus.SUCCESS -> {
-                if (getCurrentLocation) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
+                if (waitingForLocation) {
+                    Box(Modifier.fillMaxSize(), Alignment.Center) { CircularProgressIndicator() }
                     LocationTracking { location: Location ->
-                        println(location)
-                        val sortedList = postList.filter { it.location != null }.sortedBy { post ->
-                            val loc = post.location!!
-                            utils.haversineDistance(location.coordinates.latitude, location.coordinates.longitude, loc.latitude, loc.longitude)
-                        }
-                        postList.clear()
-                        postList.addAll(sortedList)
-                        title = postList[0].description
-                        markerDatum = MarkerDatum(LatLng(location.coordinates.latitude, location.coordinates.longitude),
-                            LatLng(postList[0].location?.latitude!!, postList[0].location?.longitude!!))
-                        getCurrentLocation = false
+                        currentLocation = LatLng(location.coordinates.latitude, location.coordinates.longitude)
+                        markerList.clear()
+                        postList
+                            .filter { it.location != null }
+                            .sortedBy { post ->
+                                val loc = post.location!!
+                                utils.haversineDistance(
+                                    location.coordinates.latitude,
+                                    location.coordinates.longitude,
+                                    loc.latitude,
+                                    loc.longitude
+                                )
+                            }
+                            .forEach { post ->
+                                markerList.add(
+                                    LatLng(post.location!!.latitude, post.location!!.longitude) to post.description
+                                )
+                            }
+                        waitingForLocation = false
                     }
                 } else {
-                    markerDatum.markerLocation?.let {
+                    if (currentLocation != null && markerList.isNotEmpty()) {
                         GoogleMap(
-                            currentLocationPosition = markerDatum.currentLocation !!,
-                            markerPosition = markerDatum.markerLocation !!,
-                            title = title
+                            currentLocationPosition = currentLocation!!,
+                            markerPositions = markerList
                         )
                     }
                 }
             }
 
-            UIStatus.LOADING -> {
-                CircularProgressIndicator()
-            }
-
+            UIStatus.LOADING -> CircularProgressIndicator()
             else -> {}
         }
     }
 }
-
-data class MarkerDatum(val currentLocation: LatLng?=null, val markerLocation: LatLng?=null)
-
-/*suspend fun getUsers(): List<Post> {
-    val firebaseFirestore = Firebase.firestore
-    try {
-        val userResponse =
-            firebaseFirestore.collection("POSTS").get()
-        return userResponse.documents.map { it.data() }
-    } catch (e: Exception) {
-        throw e
-    }
-}*/

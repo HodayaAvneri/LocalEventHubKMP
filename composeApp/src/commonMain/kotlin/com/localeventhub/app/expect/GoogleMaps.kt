@@ -7,8 +7,7 @@ import androidx.compose.ui.Modifier
 expect fun GoogleMap(
     modifier: Modifier = Modifier,
     currentLocationPosition: LatLng,
-    markerPosition: LatLng,
-    title: String,
+    markerPositions: List<Pair<LatLng, String>>,
     onMapClick: (LatLng) -> Unit = {}
 )
 

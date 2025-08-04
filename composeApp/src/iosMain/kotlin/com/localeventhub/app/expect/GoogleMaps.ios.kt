@@ -9,54 +9,54 @@ import androidx.compose.ui.interop.UIKitView
 import cocoapods.GoogleMaps.GMSCameraPosition
 import cocoapods.GoogleMaps.GMSCameraUpdate
 import cocoapods.GoogleMaps.GMSMapView
-import cocoapods.GoogleMaps.GMSMapViewDelegateProtocol
-import cocoapods.GoogleMaps.GMSMapViewOptions
 import cocoapods.GoogleMaps.GMSMarker
-/*import cocoapods.GoogleMaps.GMSCameraPosition
-import cocoapods.GoogleMaps.GMSCameraUpdate
-import cocoapods.GoogleMaps.GMSMapView
-import cocoapods.GoogleMaps.GMSMapViewDelegateProtocol
-import cocoapods.GoogleMaps.GMSMapViewOptions
-import cocoapods.GoogleMaps.GMSMarker*/
 import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.cValue
-import platform.CoreLocation.CLLocationCoordinate2D
-import platform.darwin.NSObject
+import platform.CoreGraphics.CGRectMake
+import platform.CoreLocation.CLLocationCoordinate2DMake
 
 @OptIn(ExperimentalForeignApi::class)
 @Composable
 actual fun GoogleMap(
     modifier: Modifier,
     currentLocationPosition: LatLng,
-    markerPosition: LatLng,
-    title: String,
+    markerPositions: List<Pair<LatLng, String>>,
     onMapClick: (LatLng) -> Unit
 ) {
-    val mapView = remember { GMSMapView() }
-    val cameraPosition = GMSCameraPosition.cameraWithLatitude(
-        latitude = markerPosition.latitude,
-        longitude = markerPosition.longitude,
-        zoom = 10.0f
-    )
-    val cameraUpdate = GMSCameraUpdate.setCamera(cameraPosition)
+    val firstTarget = markerPositions.firstOrNull()?.first ?: currentLocationPosition
 
-    // Create and configure the marker
-    LaunchedEffect(markerPosition, title) {
-        val marker = GMSMarker().apply {
-            position = cameraPosition.target
-            this.title = title
-            map = mapView // Attach the marker to the map
-        }
+    val mapView = remember {
+        val camera = GMSCameraPosition.cameraWithLatitude(
+            latitude = firstTarget.latitude,
+            longitude = firstTarget.longitude,
+            zoom = 14f
+        )
+        GMSMapView(frame = CGRectMake(0.0, 0.0, 0.0, 0.0), camera = camera)
     }
 
-    mapView.moveCamera(cameraUpdate)
+    LaunchedEffect(markerPositions) {
+        mapView.clear()
+        markerPositions.forEach { (coord, title) ->
+            GMSMarker().apply {
+                position = CLLocationCoordinate2DMake(coord.latitude, coord.longitude)
+                this.title = title
+                map = mapView
+            }
+        }
+
+        val moveTo = markerPositions.firstOrNull()?.first ?: currentLocationPosition
+        val update = GMSCameraUpdate.setCamera(
+            GMSCameraPosition.cameraWithLatitude(
+                latitude = moveTo.latitude,
+                longitude = moveTo.longitude,
+                zoom = 14f
+            )
+        )
+        mapView.moveCamera(update)
+    }
 
     UIKitView(
         modifier = modifier.fillMaxSize(),
         factory = { mapView },
-        update = { view ->
-            // Optional: Handle updates to the map view if needed
-        }
+        update = { _ -> }
     )
-
 }

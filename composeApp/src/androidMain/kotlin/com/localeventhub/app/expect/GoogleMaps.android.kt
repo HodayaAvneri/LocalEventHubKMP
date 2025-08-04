@@ -2,8 +2,11 @@ package com.localeventhub.app.expect
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
-import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.LatLng as GmsLatLng
+import com.google.maps.android.compose.GoogleMap as ComposeGoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
@@ -12,37 +15,31 @@ import com.google.maps.android.compose.rememberCameraPositionState
 actual fun GoogleMap(
     modifier: Modifier,
     currentLocationPosition: LatLng,
-    markerPosition: LatLng,
-    title: String,
+    markerPositions: List<Pair<LatLng, String>>,
     onMapClick: (LatLng) -> Unit
 ) {
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(
-            com.google.android.gms.maps.model.LatLng(
-                markerPosition.latitude,
-                markerPosition.longitude
-            ),
-            10f
+    val cameraState = rememberCameraPositionState()
+
+    LaunchedEffect(markerPositions) {
+        val target = markerPositions.firstOrNull()?.first ?: currentLocationPosition
+        cameraState.animate(
+            CameraUpdateFactory.newLatLngZoom(
+                GmsLatLng(target.latitude, target.longitude),
+                14f
+            )
         )
     }
 
-    com.google.maps.android.compose.GoogleMap(
+    ComposeGoogleMap(
         modifier = modifier.fillMaxSize(),
-        cameraPositionState = cameraPositionState,
-        onMapClick = { latLng ->
-            onMapClick(LatLng(latLng.latitude, latLng.longitude))
-        }
+        cameraPositionState = cameraState,
+        onMapClick = { ll -> onMapClick(LatLng(ll.latitude, ll.longitude)) }
     ) {
-        // Add markers or other map elements if needed
-        Marker(
-            state = MarkerState(
-                position = com.google.android.gms.maps.model.LatLng(
-                    markerPosition.latitude,
-                    markerPosition.longitude
-                )
-            ),
-            title = title,
-            snippet = ""
-        )
+        markerPositions.forEach { (coord, title) ->
+            Marker(
+                state = MarkerState(GmsLatLng(coord.latitude, coord.longitude)),
+                title = title
+            )
+        }
     }
 }
